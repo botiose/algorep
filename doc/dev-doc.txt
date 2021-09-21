@@ -1,0 +1,108 @@
+These are general intruction on how to setup and run the project for
+development. This project has been setup to support the execution of both client
+and server processes on systems with different cpu architectures. For the sake
+of supporting this feature some changes have been made in the way the build
+directory is configured, as well as the code required to run the binaries. All
+of these changes will be detailed in here.
+
+First, creating the build directory:
+===================================
+
+Seen as a different build directory need to be created for each different type
+of targeted cpu architecture, the script for creating the build directory has
+been made to account for this. On top of generating the build directory, the
+script will generate a subdirectory named after the cpu architecture of the
+machine running the script. This subdirectory will contain the usual files. To
+generate the directory run:
+
+$ etc/script/gen-build.sh [release/debug]
+
+On my x86_64 machine this will generate:
+
+algorep:
+   build:
+      x86_64:
+         bin:
+         CMakeFiles:
+         Makefile
+         ...
+
+If you plan on compiling the project on different machines with different cpu
+architectures you will need to run the script once on each machine with
+different architecture.
+
+Second, defining the config file:
+================================
+
+The config file (located in etc/config.json) is used both during compilation and
+executing of the server/client binary files. It gives a description of you local
+network. The following is an example of said config file:
+
+{
+  "nodes": {
+    "x86_64": [
+      {
+        "address": "localhost",
+        "serverProcessCount": 1,
+        "clientProcessCount": 0,
+        "projectPath": "/home/otiose/repos/epita/algorep"
+      },
+      {
+        "address": "otiose@laptop",
+        "serverProcessCount": 0,
+        "clientProcessCount": 1,
+        "projectPath": "/home/otiose/repos/epita/algorep"
+      }
+    ],
+    "armv7l": [
+      {
+        "address": "otiose@rpi",
+        "serverProcessCount": 0,
+        "clientProcessCount": 1,
+        "projectPath": "/home/otiose/repos/epita/algorep"
+      }
+    ]
+  }
+}
+
+All json objects are encapsulated in the "nodes" field, it cotains all usable
+nodes (machines). These nodes are grouped together by cpu architecture, you can
+get the architecture with 'lscpu' or by looking at the subdirectory names after
+it has been generated for all machines. Each node contains the following fields:
+
+address: The address of the node.
+serverProcessCount: The number of server processes to launch in the given node.
+clientProcessCount: The number of client processes to launch in the given node.
+projectPath: Directory of the project in the given node.
+
+If you do not plan on running the project on multiple nodes. Then simply put
+the following configs in 'etc/config.json':
+
+{
+  "nodes": {
+    "YOUR_ARCHITECTURE": [
+      {
+        "address": "localhost",
+        "serverProcessCount": 1,
+        "clientProcessCount": 1,
+        "projectPath": "YOUR_PROJECT_PATH"
+      }
+    ]
+  }
+}
+
+Seen as the config file is different for each member you can either add it to
+.gitignore or make a branch to keep track of it.
+
+On running the server on multiple machines:
+==========================================
+
+If you plan on running the project on multiple machines you will need to setup
+openssh servers on the all computers, setup the .ssh/authorized_keys files for
+all machines and optionally the .ssh/config files. You will also have to install
+sshfs and mount the project directory of the main machine you're working on the
+other nodes at the path specified in 'projectPath' in the config file. This is
+done to keep the other machines up to date for the sake of compilation, and not
+having to push and pull on each individual machine after each modification of
+the source code.
+

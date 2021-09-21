@@ -94,6 +94,14 @@ the following configs in 'etc/config.json':
 Seen as the config file is different for each member you can either add it to
 .gitignore or make a branch to keep track of it.
 
+For the moment the scripts that use the config file use 'jq' for querying it. It
+may or may not come preinstalled into your distro. If not, then for debian based
+distros you can install it with:
+
+$ sudo apt install jq
+
+If needed the scripts can be refactored so that 'jq' not be required. 
+
 On running the server on multiple machines:
 ==========================================
 

@@ -114,3 +114,11 @@ done to keep the other machines up to date for the sake of compilation, and not
 having to push and pull on each individual machine after each modification of
 the source code.
 
+Name publishing:
+================
+
+Connection between client and server is done through name publishing. This
+requires a running instance of ompi-server to be running. You can launch it
+with:
+
+$ ompi-server --no-daemonize --report-uri etc/urifile

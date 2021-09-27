@@ -13,8 +13,10 @@ main(int argc, char* argv[]) {
 
   MPI_Lookup_name("server", MPI_INFO_NULL, &port[0]);
 
+  std::cout << "client " << rank << " found port: " << port << std::endl; 
+
   MPI_Comm interComm;
-  MPI_Comm_connect(port, MPI_INFO_NULL, rank, MPI_COMM_WORLD, &interComm);
+  MPI_Comm_connect(port, MPI_INFO_NULL, rank, MPI_COMM_SELF, &interComm);
 
   std::cout << "client " << rank << " connected." << std::endl; 
   std::cout << "client " << rank << " shutting down." << std::endl; 

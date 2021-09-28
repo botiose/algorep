@@ -8,6 +8,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 set(SERVER_SRC
   src/server.cc
+  src/node.cc
+  src/messenger.cc
   )
 
 set(CLIENT_SRC
@@ -29,11 +31,11 @@ add_executable(client
   )
 
 target_include_directories(client PUBLIC
-  "${PROJECT_SOURCE_DIR}/src/include/client"
+  "${PROJECT_SOURCE_DIR}/src/include"
   )
 
 target_include_directories(server PUBLIC
-  "${PROJECT_SOURCE_DIR}/src/include/server"
+  "${PROJECT_SOURCE_DIR}/src/include"
   )
 
 # CROSSCOMPILE CLIENT TARGET

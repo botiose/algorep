@@ -1,0 +1,4 @@
+* TODO open mpi
+** TODO specify explicit buffering for sent messages
+* TODO leader election
+* TODO multi paxos

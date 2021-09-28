@@ -32,3 +32,32 @@ Messenger::receiveMessage(int& srcNodeId, Message& message) const {
   message.tag = status.MPI_TAG;
   srcNodeId = status.MPI_SOURCE;
 }
+
+void
+Messenger::receiveMessageWithTag(const MessageTag& messageTag,
+                                 int& srcNodeId,
+                                 Message& message) const {
+  int tag = static_cast<int>(messageTag);
+  MPI_Status status;
+
+  MPI_Recv(&message.code,
+           MESSAGE_CODE_COUNT,
+           MPI_INT,
+           MPI_ANY_SOURCE,
+           tag,
+           MPI_COMM_WORLD,
+           &status);
+
+  message.tag = status.MPI_TAG;
+  srcNodeId = status.MPI_SOURCE;
+}
+
+bool
+Messenger::hasMessageWithTag(const MessageTag& messageTag) const {
+  int tag = static_cast<int>(messageTag);
+  MPI_Status status;
+  int flag;
+  MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+
+  return flag == 1;
+}

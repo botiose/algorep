@@ -8,9 +8,15 @@ enum class MessageTag {
   SIZE
 };
 
-enum class MessageCode {
-  BULLY_ELECTION,
-  BULLY_ACTIVE,
-  BULLY_VICTORY,
+enum class BullyCode {
+  ELECTION,
+  ALIVE,
+  VICTORY,
+  SIZE
+};
+
+enum class RpcCode {
+  START,
+  SHUTDOWN,
   SIZE
 };

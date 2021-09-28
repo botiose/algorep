@@ -15,16 +15,9 @@ main(int argc, char* argv[]) {
 
   if (node.getNodeId() == 4) {
     node.startElection();
-  } else {
-    int srcNodeId;
-    Message message;
-    node.receiveMessage(srcNodeId, message);
-
-    std::cout << "node: " << node.getNodeId()
-              << " received message with tag: " << message.tag
-              << " and code: " << message.code << " from node: " << srcNodeId
-              << std::endl;
   }
+
+  node.startReceiveLoop();
 
   MPI_Finalize();
 

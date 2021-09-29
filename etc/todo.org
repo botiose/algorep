@@ -1,4 +1,5 @@
 * TODO open mpi
 ** TODO specify explicit buffering for sent messages
-* TODO leader election
+** TODO research non-blocking receive & refactor 'Messenger::receiveWithTag'
+* DONE leader election
 * TODO multi paxos

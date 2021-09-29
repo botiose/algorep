@@ -8,17 +8,22 @@ public:
   Messenger(const int& nodeId);
 
   void
-  sendMessage(const int& dstNodeId, const Message& message) const;
+  send(const int& dstNodeId, const Message& message) const;
 
   void
-  receiveMessage(int& srcNodeId, Message& message) const;
+  receiveBlock(int& srcNodeId, Message& message) const;
   void
-  receiveMessageWithTag(const MessageTag& messageTag,
-                        int& srcNodeId,
-                        Message& message) const;
+  receiveWithTagBlock(const MessageTag& messageTag,
+                      int& srcNodeId,
+                      Message& message) const;
+  void
+  receiveWithTag(const MessageTag& messageTag,
+                 bool& messageReceived,
+                 int& srcNodeId,
+                 Message& message) const;
 
-  bool
-  hasMessageWithTag(const MessageTag& messageTag) const;
+  void
+  hasPendingWithTag(const MessageTag& messageTag, bool& hasPending) const;
 
 private:
   const int m_nodeId;

@@ -1,10 +1,12 @@
 #include <iostream>
 #include <unistd.h>
+#include <chrono>
 
 #include "node.hh"
 #include "message-codes.hh"
 
-#define WAIT_DURATION 3
+#define ELECTION_WAIT_DURATION 3
+#define VICTORY_WAIT_DURATION 60
 
 Node::Node(const int& nodeId, const int& clusterSize)
     : m_nodeId(nodeId), m_clusterSize(clusterSize), m_messenger(nodeId) {
@@ -17,10 +19,13 @@ Node::HandleBullyMessage(const int& srcNodeId, const Message& receivedMessage) {
   BullyCode bullyCode = static_cast<BullyCode>(receivedMessage.code);
   switch (bullyCode) {
   case BullyCode::ELECTION: {
+    std::cout << "node.cc: [I] Node " << m_nodeId
+              << " received BullyCode::ELECTION from node "
+              << srcNodeId << std::endl;
     Message activeMessage{static_cast<int>(MessageTag::BULLY),
                           static_cast<int>(BullyCode::ALIVE)};
 
-    m_messenger.sendMessage(srcNodeId, activeMessage);
+    m_messenger.send(srcNodeId, activeMessage);
 
     if (srcNodeId < m_nodeId) {
       startElection();
@@ -28,14 +33,17 @@ Node::HandleBullyMessage(const int& srcNodeId, const Message& receivedMessage) {
     break;
   }
   case BullyCode::VICTORY: {
+    std::cout << "node.cc: [I] Node " << m_nodeId
+              << " received BullyCode::VICTORY from node "
+              << srcNodeId << std::endl;
     m_isLeader = false;
     m_leaderNodeId = srcNodeId;
     break;
   }
   default: {
-    std::cout
-        << "node.cc: [I] Received an unexpected BULLY:ACTIVE message code."
-        << std::endl;
+    std::cout << "node.cc: [I] Node " << m_nodeId
+              << " received unexpected BullyCode::ALIVE from node "
+              << srcNodeId << std::endl;
     break;
   }
   }
@@ -47,7 +55,7 @@ Node::startReceiveLoop() {
   while (isUp == true) {
     int srcNodeId;
     Message receivedMessage;
-    m_messenger.receiveMessage(srcNodeId, receivedMessage);
+    m_messenger.receiveBlock(srcNodeId, receivedMessage);
 
     MessageTag messageTag = static_cast<MessageTag>(receivedMessage.tag);
     switch (messageTag) {
@@ -60,7 +68,79 @@ Node::startReceiveLoop() {
 }
 
 void
+busyBullyWait(const Messenger& messenger,
+              const int& nodeId,
+              const int& clusterSize,
+              const int& waitSeconds,
+              bool& gotVictor) {
+  using namespace std::chrono;
+  auto start = high_resolution_clock::now();
+  auto cur = high_resolution_clock::now();
+  int elapsed = 0;
+  bool messageReceived = false;
+  while ((messageReceived == false) && (elapsed < waitSeconds)) {
+    int srcNodeId;
+    Message receivedMessage;
+    messenger.receiveWithTag(
+        MessageTag::BULLY, messageReceived, srcNodeId, receivedMessage);
+
+    if (messageReceived == true) {
+      BullyCode messageCode = static_cast<BullyCode>(receivedMessage.code);
+
+      switch (messageCode) {
+      case BullyCode::ALIVE: {
+        std::cout << "node.cc: [I] node " << nodeId
+                  << " received BullyCode::ALIVE from node " << srcNodeId
+                  << std::endl;
+        busyBullyWait(messenger, nodeId, clusterSize, 50, gotVictor);
+        break;
+      }
+      case BullyCode::ELECTION: {
+        std::cout << "node.cc: [I] node " << nodeId
+                  << " received BullyCode::ELECTION from node " << srcNodeId
+                  << std::endl;
+        Message activeMessage{static_cast<int>(MessageTag::BULLY),
+                              static_cast<int>(BullyCode::ALIVE)};
+
+        messenger.send(srcNodeId, activeMessage);
+        break;
+      }
+      case BullyCode::VICTORY: {
+        std::cout << "node.cc: [I] node " << nodeId
+                  << " received BullyCode::VICTORY from node " << srcNodeId
+                  << std::endl;
+        gotVictor = true;
+        break;
+      }
+      }
+    }
+
+    cur = high_resolution_clock::now();
+    elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
+  }
+
+  if (messageReceived == false) {
+    // std::cout << nodeId << std::endl;
+    Message victoryMessage;
+    victoryMessage.tag = static_cast<int>(MessageTag::BULLY);
+    victoryMessage.code = static_cast<int>(BullyCode::VICTORY);
+
+    for (int i = 0; i < clusterSize; i++) {
+      if (i == nodeId) {
+        continue;
+      }
+
+      messenger.send(i, victoryMessage);
+    }
+
+    gotVictor = true;
+  }
+}
+
+void
 Node::startElection() const {
+  std::cout << "node.cc: [I] node " << m_nodeId << " started an election."
+            << std::endl;
   bool gotVictor = false;
   while (gotVictor == false) {
     Message message;
@@ -68,59 +148,10 @@ Node::startElection() const {
     message.code = static_cast<int>(BullyCode::ELECTION);
 
     for (int dstNodeId = m_nodeId + 1; dstNodeId < m_clusterSize; dstNodeId++) {
-      m_messenger.sendMessage(dstNodeId, message);
+      m_messenger.send(dstNodeId, message);
     }
 
-    sleep(WAIT_DURATION);
-
-    bool gotElectionResponse = m_messenger.hasMessageWithTag(MessageTag::BULLY);
-
-    if (gotElectionResponse == false) {
-      Message victoryMessage;
-      victoryMessage.tag = static_cast<int>(MessageTag::BULLY);
-      victoryMessage.code = static_cast<int>(BullyCode::VICTORY);
-
-      for (int nodeId = 0; nodeId < m_clusterSize; nodeId++) {
-        if (nodeId == m_nodeId) {
-          continue;
-        }
-
-        m_messenger.sendMessage(nodeId, message);
-      }
-
-      gotVictor = true;
-    } else {
-      // otherwise check if there's a process with higher id in responses
-      bool higherIdNodeResponded = false;
-      bool responsesRemain;
-      do {
-        int srcNodeId;
-        Message responseMessage;
-        m_messenger.receiveMessageWithTag(
-            MessageTag::BULLY, srcNodeId, responseMessage);
-
-        higherIdNodeResponded |= srcNodeId > m_nodeId;
-
-        responsesRemain = m_messenger.hasMessageWithTag(MessageTag::BULLY);
-      } while (responsesRemain == true);
-
-      // if yes then wait for a victory message for a given amount of time
-      // otherwise restart election
-      if (higherIdNodeResponded) {
-        sleep(WAIT_DURATION);
-
-        while (responsesRemain) {
-          responsesRemain = m_messenger.hasMessageWithTag(MessageTag::BULLY);
-          int srcNodeId;
-          Message responseMessage;
-          m_messenger.receiveMessageWithTag(
-              MessageTag::BULLY, srcNodeId, responseMessage);
-
-          gotVictor |=
-              static_cast<BullyCode>(message.code) == BullyCode::VICTORY;
-        }
-      }
-    }
+    busyBullyWait(m_messenger, m_nodeId, m_clusterSize, 5, gotVictor);
   }
 }
 

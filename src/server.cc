@@ -13,7 +13,7 @@ main(int argc, char* argv[]) {
 
   Node node(rank, size);
 
-  if (node.getNodeId() == 4) {
+  if (node.getNodeId() == 1) {
     node.startElection();
   }
 

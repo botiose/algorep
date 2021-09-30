@@ -11,7 +11,8 @@ handleBullyMessage(const Messenger& messenger,
                    const int& srcNodeId,
                    const Message& receivedMessage,
                    int& leaderNodeId) {
-  LeaderElectionCode bullyCode = static_cast<LeaderElectionCode>(receivedMessage.code);
+  LeaderElectionCode bullyCode =
+      static_cast<LeaderElectionCode>(receivedMessage.code);
   switch (bullyCode) {
   case LeaderElectionCode::ELECTION: {
     Message activeMessage{static_cast<int>(MessageTag::LEADER_ELECTION),
@@ -54,11 +55,6 @@ Node::startReceiveLoop() {
     }
   }
 }
-
-int
-Node::getNodeId() const {
-  return m_nodeId;
-};
 
 void
 Node::startMessenger() {

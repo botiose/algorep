@@ -32,11 +32,11 @@ declareVictory(const Messenger& messenger,
 
 void
 busyLeaderElectionWait(const Messenger& messenger,
-              const int& nodeId,
-              const int& clusterSize,
-              const int& waitSeconds,
-              bool& gotVictor,
-              int& victorNodeId) {
+                       const int& nodeId,
+                       const int& clusterSize,
+                       const int& waitSeconds,
+                       bool& gotVictor,
+                       int& victorNodeId) {
   using namespace std::chrono;
   auto start = high_resolution_clock::now();
   auto cur = high_resolution_clock::now();
@@ -46,20 +46,23 @@ busyLeaderElectionWait(const Messenger& messenger,
   while ((messageReceived == false) && (elapsed < waitSeconds)) {
     int srcNodeId;
     Message receivedMessage;
-    messenger.receiveWithTag(
-        MessageTag::LEADER_ELECTION, messageReceived, srcNodeId, receivedMessage);
+    messenger.receiveWithTag(MessageTag::LEADER_ELECTION,
+                             messageReceived,
+                             srcNodeId,
+                             receivedMessage);
 
     if (messageReceived == true) {
-      LeaderElectionCode messageCode = static_cast<LeaderElectionCode>(receivedMessage.code);
+      LeaderElectionCode messageCode =
+          static_cast<LeaderElectionCode>(receivedMessage.code);
 
       switch (messageCode) {
       case LeaderElectionCode::ALIVE: {
         busyLeaderElectionWait(messenger,
-                      nodeId,
-                      clusterSize,
-                      VICTORY_WAIT_DURATION,
-                      gotVictor,
-                      victorNodeId);
+                               nodeId,
+                               clusterSize,
+                               VICTORY_WAIT_DURATION,
+                               gotVictor,
+                               victorNodeId);
         break;
       }
       case LeaderElectionCode::ELECTION: {
@@ -103,11 +106,11 @@ startElection(const Messenger& messenger,
     }
 
     busyLeaderElectionWait(messenger,
-                  nodeId,
-                  clusterSize,
-                  ELECTION_WAIT_DURATION,
-                  gotVictor,
-                  victorNodeId);
+                           nodeId,
+                           clusterSize,
+                           ELECTION_WAIT_DURATION,
+                           gotVictor,
+                           victorNodeId);
   }
 
   leaderNodeId = victorNodeId;

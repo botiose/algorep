@@ -10,6 +10,7 @@ set(SERVER_SRC
   src/server.cc
   src/node.cc
   src/messenger.cc
+  src/leader-election.cc
   )
 
 set(CLIENT_SRC

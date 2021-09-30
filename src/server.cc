@@ -4,22 +4,13 @@
 
 int
 main(int argc, char* argv[]) {
-  MPI_Init(&argc, &argv);
+  Node node{};
 
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  int size;
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-
-  Node node(rank, size);
-
-  if (node.getNodeId() == 1) {
-    node.startElection();
-  }
+  node.startMessenger();
 
   node.startReceiveLoop();
 
-  MPI_Finalize();
+  node.stopMessenger();
 
   return 0;
 }

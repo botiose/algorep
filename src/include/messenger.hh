@@ -5,7 +5,17 @@
 
 class Messenger {
 public:
-  Messenger(const int& nodeId);
+  Messenger() = default;
+
+  void
+  start(int& rank, int& clusterSize);
+  void
+  stop() const;
+
+  void
+  getRank(int& rank) const;
+  void
+  getClusterSize(int& clusterSize) const;
 
   void
   send(const int& dstNodeId, const Message& message) const;
@@ -26,5 +36,5 @@ public:
   hasPendingWithTag(const MessageTag& messageTag, bool& hasPending) const;
 
 private:
-  const int m_nodeId;
+  int m_rank;
 };

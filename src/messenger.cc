@@ -4,9 +4,6 @@
 
 #define MESSAGE_CODE_COUNT 1
 
-Messenger::Messenger(const int& nodeId) : m_nodeId(nodeId) {
-}
-
 void
 Messenger::send(const int& dstNodeId, const Message& message) const {
   MPI_Send(&message.code,
@@ -72,4 +69,19 @@ Messenger::receiveWithTag(const MessageTag& messageTag,
   if (messageReceived == true) {
     receiveWithTagBlock(messageTag, srcNodeId, message);
   }
+}
+
+void
+Messenger::start(int& rank, int& clusterSize) {
+  MPI_Init(0, 0);
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
+  rank = m_rank;
+
+  MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
+}
+
+void
+Messenger::stop() const {
+  MPI_Finalize();
 }

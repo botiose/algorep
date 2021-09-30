@@ -4,11 +4,12 @@
 
 class Node {
 public:
-  Node(const int& nodeId, const int& clusterSize);
+  Node() = default;
 
-  // TODO make private
   void
-  startElection() const;
+  startMessenger();
+  void
+  stopMessenger() const;
 
   void
   startReceiveLoop();
@@ -17,13 +18,10 @@ public:
   getNodeId() const;
 
 private:
-  void
-  HandleBullyMessage(const int& srcNodeId, const Message& recievedMessage);
 
-  const Messenger m_messenger;
+  Messenger m_messenger;
 
-  const int m_nodeId;
-  const int m_clusterSize;
-  bool m_isLeader;
+  int m_nodeId;
+  int m_clusterSize;
   int m_leaderNodeId;
 };

@@ -15,8 +15,8 @@ declareVictory(const Messenger& messenger,
                bool& gotVictor,
                int& victorNodeId) {
   Message victoryMessage;
-  victoryMessage.tag = static_cast<int>(MessageTag::BULLY);
-  victoryMessage.code = static_cast<int>(BullyCode::VICTORY);
+  victoryMessage.tag = static_cast<int>(MessageTag::LEADER_ELECTION);
+  victoryMessage.code = static_cast<int>(LeaderElectionCode::VICTORY);
 
   for (int i = 0; i < clusterSize; i++) {
     if (i == nodeId) {
@@ -31,7 +31,7 @@ declareVictory(const Messenger& messenger,
 }
 
 void
-busyBullyWait(const Messenger& messenger,
+busyLeaderElectionWait(const Messenger& messenger,
               const int& nodeId,
               const int& clusterSize,
               const int& waitSeconds,
@@ -47,14 +47,14 @@ busyBullyWait(const Messenger& messenger,
     int srcNodeId;
     Message receivedMessage;
     messenger.receiveWithTag(
-        MessageTag::BULLY, messageReceived, srcNodeId, receivedMessage);
+        MessageTag::LEADER_ELECTION, messageReceived, srcNodeId, receivedMessage);
 
     if (messageReceived == true) {
-      BullyCode messageCode = static_cast<BullyCode>(receivedMessage.code);
+      LeaderElectionCode messageCode = static_cast<LeaderElectionCode>(receivedMessage.code);
 
       switch (messageCode) {
-      case BullyCode::ALIVE: {
-        busyBullyWait(messenger,
+      case LeaderElectionCode::ALIVE: {
+        busyLeaderElectionWait(messenger,
                       nodeId,
                       clusterSize,
                       VICTORY_WAIT_DURATION,
@@ -62,14 +62,14 @@ busyBullyWait(const Messenger& messenger,
                       victorNodeId);
         break;
       }
-      case BullyCode::ELECTION: {
-        Message activeMessage{static_cast<int>(MessageTag::BULLY),
-                              static_cast<int>(BullyCode::ALIVE)};
+      case LeaderElectionCode::ELECTION: {
+        Message activeMessage{static_cast<int>(MessageTag::LEADER_ELECTION),
+                              static_cast<int>(LeaderElectionCode::ALIVE)};
 
         messenger.send(srcNodeId, activeMessage);
         break;
       }
-      case BullyCode::VICTORY: {
+      case LeaderElectionCode::VICTORY: {
         victorNodeId = srcNodeId;
         gotVictor = true;
         break;
@@ -95,14 +95,14 @@ startElection(const Messenger& messenger,
   int victorNodeId;
   while (gotVictor == false) {
     Message message;
-    message.tag = static_cast<int>(MessageTag::BULLY);
-    message.code = static_cast<int>(BullyCode::ELECTION);
+    message.tag = static_cast<int>(MessageTag::LEADER_ELECTION);
+    message.code = static_cast<int>(LeaderElectionCode::ELECTION);
 
     for (int dstNodeId = nodeId + 1; dstNodeId < clusterSize; dstNodeId++) {
       messenger.send(dstNodeId, message);
     }
 
-    busyBullyWait(messenger,
+    busyLeaderElectionWait(messenger,
                   nodeId,
                   clusterSize,
                   ELECTION_WAIT_DURATION,

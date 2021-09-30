@@ -1,14 +1,14 @@
 #pragma once
 
 enum class MessageTag {
-  BULLY,
-  PAXOS,
+  LEADER_ELECTION,
+  CONSENSUS,
   LOG,
-  RPC,
+  REPL,
   SIZE
 };
 
-enum class BullyCode {
+enum class LeaderElectionCode {
   ELECTION,
   ALIVE,
   VICTORY,

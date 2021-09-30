@@ -11,11 +11,11 @@ handleBullyMessage(const Messenger& messenger,
                    const int& srcNodeId,
                    const Message& receivedMessage,
                    int& leaderNodeId) {
-  BullyCode bullyCode = static_cast<BullyCode>(receivedMessage.code);
+  LeaderElectionCode bullyCode = static_cast<LeaderElectionCode>(receivedMessage.code);
   switch (bullyCode) {
-  case BullyCode::ELECTION: {
-    Message activeMessage{static_cast<int>(MessageTag::BULLY),
-                          static_cast<int>(BullyCode::ALIVE)};
+  case LeaderElectionCode::ELECTION: {
+    Message activeMessage{static_cast<int>(MessageTag::LEADER_ELECTION),
+                          static_cast<int>(LeaderElectionCode::ALIVE)};
 
     messenger.send(srcNodeId, activeMessage);
 
@@ -25,7 +25,7 @@ handleBullyMessage(const Messenger& messenger,
     }
     break;
   }
-  case BullyCode::VICTORY: {
+  case LeaderElectionCode::VICTORY: {
     leaderNodeId = srcNodeId;
     break;
   }
@@ -42,7 +42,7 @@ Node::startReceiveLoop() {
 
     MessageTag messageTag = static_cast<MessageTag>(receivedMessage.tag);
     switch (messageTag) {
-    case MessageTag::BULLY: {
+    case MessageTag::LEADER_ELECTION: {
       handleBullyMessage(m_messenger,
                          m_nodeId,
                          m_clusterSize,

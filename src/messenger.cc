@@ -1,16 +1,51 @@
 #include <mpi.h>
+#include <cassert>
+
+#include <json.hpp>
 
 #include "messenger.hh"
+#include "message-info.hh"
 
-#define MESSAGE_CODE_COUNT 1
+// TODO update this to the actual amount required.
+#define MESSAGE_SIZE 1000
+
+void
+serializeMessage(const Message& message, std::string& messageString) {
+  nlohmann::json messageJson = {{"code", message.getCode<int>()},
+               {"id", message.getId()},
+               {"command", message.getCommand()}};
+
+  messageString = messageJson.dump();
+}
+
+void
+deserializeMessage(const MessagePassKey& passKey,
+                   const std::string& messageString,
+                   Message& message) {
+  nlohmann::json messageJson = nlohmann::json::parse(messageString);
+
+  message.setCode<int>(passKey, messageJson["code"]);
+  message.setId(passKey, messageJson["id"]);
+  message.setCommand(passKey, messageJson["command"]);
+
+  message.setToValid(passKey);
+}
 
 void
 Messenger::send(const int& dstNodeId, const Message& message) const {
-  MPI_Send(&message.code,
-           MESSAGE_CODE_COUNT,
-           MPI_INT,
+  assert(message.getIsValid());
+
+  std::string messageString;
+  serializeMessage(message, messageString);
+
+  messageString.resize(MESSAGE_SIZE);
+
+  int tag = message.getTagInt();
+  MPI_Send(messageString.c_str(),
+           MESSAGE_SIZE,
+           MPI_CHAR,
            dstNodeId,
-           message.tag,
+           tag,
            MPI_COMM_WORLD);
 }
 
@@ -18,18 +53,27 @@ void
 Messenger::receiveBlock(int& srcNodeId, Message& message) const {
   MPI_Status status;
 
-  MPI_Recv(&message.code,
-           MESSAGE_CODE_COUNT,
-           MPI_INT,
+  char messageChar[MESSAGE_SIZE];
+
+  MPI_Recv(&messageChar,
+           MESSAGE_SIZE,
+           MPI_CHAR,
            MPI_ANY_SOURCE,
            MPI_ANY_TAG,
            MPI_COMM_WORLD,
            &status);
 
-  message.tag = status.MPI_TAG;
+  MessagePassKey passKey;
+  std::string messageString(messageChar);
+  deserializeMessage(passKey, messageString, message);
+
+  message.setTag(passKey, status.MPI_TAG);
+
   srcNodeId = status.MPI_SOURCE;
 }
 
+// TODO make a third inner function to be used in with the receive function
+// to reduce duplicated code
 void
 Messenger::receiveWithTagBlock(const MessageTag& messageTag,
                                int& srcNodeId,
@@ -37,15 +81,20 @@ Messenger::receiveWithTagBlock(const MessageTag& messageTag,
   int tag = static_cast<int>(messageTag);
   MPI_Status status;
 
-  MPI_Recv(&message.code,
-           MESSAGE_CODE_COUNT,
-           MPI_INT,
+  char messageChar[MESSAGE_SIZE];
+
+  MPI_Recv(&messageChar,
+           MESSAGE_SIZE,
+           MPI_CHAR,
            MPI_ANY_SOURCE,
            tag,
            MPI_COMM_WORLD,
            &status);
 
-  message.tag = status.MPI_TAG;
+  MessagePassKey passKey;
+  std::string messageString(messageChar);
+  deserializeMessage(passKey, messageString, message);
+
   srcNodeId = status.MPI_SOURCE;
 }
 

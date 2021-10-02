@@ -12,7 +12,7 @@
 #pragma once
 
 #include "message.hh"
-#include "message-codes.hh"
+#include "message-info.hh"
 
 class Messenger {
 public:
@@ -56,6 +56,14 @@ public:
    */
   void
   getClusterSize(int& clusterSize) const;
+
+  template <typename T>
+  void
+  setMessage(const T& code, Message& message) const;
+
+  template <typename T>
+  void
+  setMessage(const T& code, const std::string& command, Message& message) const;
 
   /**
    * @brief Sends the given message to the specified node.
@@ -116,3 +124,5 @@ public:
 private:
   int m_rank; /**< rank of the current process */
 };
+
+#include "messenger.hxx"

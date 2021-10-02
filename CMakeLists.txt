@@ -10,6 +10,8 @@ set(SERVER_SRC
   src/server.cc
   src/node.cc
   src/messenger.cc
+  src/message.cc
+  src/message-info.cc
   src/leader-election.cc
   )
 
@@ -36,6 +38,7 @@ target_include_directories(client PUBLIC
   )
 
 target_include_directories(server PUBLIC
+  "${PROJECT_SOURCE_DIR}/extern/json"
   "${PROJECT_SOURCE_DIR}/src/include"
   )
 
@@ -65,6 +68,4 @@ add_custom_target(run-server
   DEPENDS server crosscompile-server
   )
 
-# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
-add_subdirectory(test/extern/googletest EXCLUDE_FROM_ALL)
 add_subdirectory(test EXCLUDE_FROM_ALL)

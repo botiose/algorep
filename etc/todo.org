@@ -1,5 +1,9 @@
 * TODO open mpi
 ** TODO specify explicit buffering for sent messages
 ** TODO research non-blocking receive & refactor 'Messenger::receiveWithTag'
-* DONE leader election
+* TODO leader election
+** TODO comment the bully algorithm
+** TODO research for the condition in which bully algorithm produces two leaders
+** TODO rename the namespace to 'election'
 * TODO multi paxos
+** TODO set the message id in the messenger class

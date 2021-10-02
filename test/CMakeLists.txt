@@ -16,3 +16,5 @@ add_custom_target(check-verbose
   DEPENDS template-test
   COMMAND printf %80s\\\\n | tr " " "="
   )
+
+add_subdirectory(extern/googletest EXCLUDE_FROM_ALL)

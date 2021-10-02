@@ -1,8 +1,7 @@
 #include <chrono>
 
 #include "leader-election.hh"
-
-#include "message-codes.hh"
+#include "message-info.hh"
 
 #define ELECTION_WAIT_DURATION 5
 #define VICTORY_WAIT_DURATION 60
@@ -15,8 +14,9 @@ declareVictory(const Messenger& messenger,
                bool& gotVictor,
                int& victorNodeId) {
   Message victoryMessage;
-  victoryMessage.tag = static_cast<int>(MessageTag::LEADER_ELECTION);
-  victoryMessage.code = static_cast<int>(LeaderElectionCode::VICTORY);
+
+  messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::VICTORY,
+                                           victoryMessage);
 
   for (int i = 0; i < clusterSize; i++) {
     if (i == nodeId) {
@@ -53,10 +53,14 @@ busyLeaderElectionWait(const Messenger& messenger,
 
     if (messageReceived == true) {
       LeaderElectionCode messageCode =
-          static_cast<LeaderElectionCode>(receivedMessage.code);
+          receivedMessage.getCode<LeaderElectionCode>();
 
       switch (messageCode) {
       case LeaderElectionCode::ALIVE: {
+        // If the current process receives an Answer from a process with a
+        // higher ID, it sends no further messages for this election and waits
+        // for a Victory message. (If there is no Victory message after a period
+        // of time, it restarts the process at the beginning.)
         busyLeaderElectionWait(messenger,
                                nodeId,
                                clusterSize,
@@ -66,13 +70,19 @@ busyLeaderElectionWait(const Messenger& messenger,
         break;
       }
       case LeaderElectionCode::ELECTION: {
-        Message activeMessage{static_cast<int>(MessageTag::LEADER_ELECTION),
-                              static_cast<int>(LeaderElectionCode::ALIVE)};
+        // If the current process receives an Election message from another
+        // process with a lower ID it sends an Answer message back and
+        // contineous the current election.
+        Message activeMessage;
+        messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::ALIVE,
+                                                 activeMessage);
 
         messenger.send(srcNodeId, activeMessage);
         break;
       }
       case LeaderElectionCode::VICTORY: {
+        // If the current process receives a Coordinator message, it treats the
+        // sender as the coordinator.
         victorNodeId = srcNodeId;
         gotVictor = true;
         break;
@@ -84,6 +94,9 @@ busyLeaderElectionWait(const Messenger& messenger,
     elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
   }
 
+  // If the current process receives no Answer after sending an Election
+  // message, then it broadcasts a Victory message to all other processes and
+  // becomes the Coordinator.
   if (messageReceived == false) {
     declareVictory(messenger, nodeId, clusterSize, gotVictor, victorNodeId);
   }
@@ -98,8 +111,7 @@ startElection(const Messenger& messenger,
   int victorNodeId;
   while (gotVictor == false) {
     Message message;
-    message.tag = static_cast<int>(MessageTag::LEADER_ELECTION);
-    message.code = static_cast<int>(LeaderElectionCode::ELECTION);
+    messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::ELECTION, message);
 
     for (int dstNodeId = nodeId + 1; dstNodeId < clusterSize; dstNodeId++) {
       messenger.send(dstNodeId, message);
@@ -114,6 +126,39 @@ startElection(const Messenger& messenger,
   }
 
   leaderNodeId = victorNodeId;
+}
+
+void
+handleElectionMessage(const Messenger& messenger,
+                      const int& nodeId,
+                      const int& clusterSize,
+                      const int& srcNodeId,
+                      const Message& receivedMessage,
+                      int& leaderNodeId) {
+  LeaderElectionCode bullyCode = receivedMessage.getCode<LeaderElectionCode>();
+  switch (bullyCode) {
+  case LeaderElectionCode::ELECTION: {
+    // If the current process receives an Election message from another process
+    // with a lower ID it sends an Answer message back and starts the election
+    // process at the beginning, by sending an Election message to
+    // higher-numbered processes.
+    Message activeMessage;
+
+    messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::ALIVE,
+                                             activeMessage);
+    messenger.send(srcNodeId, activeMessage);
+
+    if (srcNodeId < nodeId) {
+      leader_election::startElection(
+          messenger, nodeId, clusterSize, leaderNodeId);
+    }
+    break;
+  }
+  case LeaderElectionCode::VICTORY: {
+    leaderNodeId = srcNodeId;
+    break;
+  }
+  }
 }
 
 } // namespace leader_election

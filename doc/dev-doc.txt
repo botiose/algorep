@@ -122,3 +122,4 @@ requires a running instance of ompi-server to be running. You can launch it
 with:
 
 $ ompi-server --no-daemonize --report-uri etc/urifile
+

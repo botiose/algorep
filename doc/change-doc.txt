@@ -1,0 +1,65 @@
+77ac57b
+=======
+
+There are currently 5 header files defined in src/include (excluding .hxx):
+- leader-election.hh
+- messenger.hh
+- message.hh
+- node.hh
+- message-info.hh
+
+Most of the work that has been done up until this point has been directed
+towards the leader election algorithm (declared in the 'leader-election.hh'
+header) and the design of the Messenger and Message classes (messenger.hh &
+message.hh).
+
+node.hh:
+--------
+
+The 'Node' class (node.hh) is an abstraction meant to encapsulate all logic
+relating to nodes in distributed systems. Only one node is to be instanciated
+per MPI process (this might be enforced later on during development). Nodes
+contain a m_messenger member through which all outside communication is
+done. All remaining class members define useful information regarding the
+cluster of nodes/processes the current node is a part of. Nodes are relatively
+high level abstractions over the MPI API. The main function of this class is the
+startReceiveLoop() which actively wait and handles all incoming communication.
+
+messenger.hh:
+-------------
+
+The Messenger class encapsulates the Open MPI API. All MPI calls are done
+through this class. This was done to minimize complexity of the overall design.
+Messengers are lower level abstraction of the MPI API and are meant to be
+instantiated once by each node. That said coupling between these two classes
+still remains fairly minimal and will hopefully remain this way.
+
+message.hh:
+-----------
+
+The Message class is for all intents and purposes a collection of data used
+during communication between nodes. This class was initialy a struct, however,
+this was changed in preparations for the implementation of the Paxos algorithm.
+The Paxos algorithm requires each message to have a unique identifier for all
+messages between all nodes. To produce this unique identifier an MPI call needs
+to be made, and since by design all MPI call are done through the Messenger
+class, a design choice was made to only allow the Messenger to initialize
+Message instances (this is enforced through the use of the passkey
+idiom). Initilization is done through setters only callable from the Messenger
+class. Privating the constructor and making the Messenger class a friend of
+Message was also considered but discarded for the sake of minimizing potentially
+expensive copies of the string member (currently m_command) in the Message
+class. Having setters allows for a reference of the Message to be passed down to
+the Messenger for initialization and thus minimizes copying. The Messenger and
+Message classes are strongly coupled.
+
+message-info.hh:
+----------------
+
+This file only defines message tags and codes used during communication.
+
+leader-election.hh:
+-------------------
+
+This file declares the handleElectionMessage() function encompassing all leader
+election logic. Leader election is done through the Bully Algorithm.

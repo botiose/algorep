@@ -134,3 +134,13 @@ void
 Messenger::stop() const {
   MPI_Finalize();
 }
+
+void
+Messenger::publish() const {
+  // TODO implement
+}
+
+void
+Messenger::acceptConnection() const {
+  // TODO implement
+}

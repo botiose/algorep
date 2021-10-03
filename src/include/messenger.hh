@@ -1,4 +1,4 @@
-/**
+ /**
  * @file   messenger.hh
  * @author Otiose email
  * @date   Thu Sep 30 14:33:41 2021
@@ -120,6 +120,12 @@ public:
    */
   void
   hasPendingWithTag(const MessageTag& messageTag, bool& hasPending) const;
+
+  void
+  publish() const;
+
+  void
+  acceptConnection() const;
 
 private:
   int m_rank; /**< rank of the current process */

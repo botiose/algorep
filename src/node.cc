@@ -20,6 +20,11 @@ Node::startReceiveLoop() {
                                              srcNodeId,
                                              receivedMessage,
                                              m_leaderNodeId);
+
+      if (this->isLeader() == true) {
+        this->startAcceptThread();
+      }
+
       break;
     }
     }
@@ -36,4 +41,23 @@ Node::startMessenger() {
 void
 Node::stopMessenger() const {
   m_messenger.stop();
+}
+
+void
+Node::startAcceptThread() const {
+  // TODO implement
+  // m_messenger.publish();
+  // while (true) {
+  //   m_messenger.acceptConnection();
+  // }
+}
+
+void
+Node::replicate(const std::string& data) const {
+  
+}
+
+bool
+Node::isLeader() const {
+  return m_nodeId == m_leaderNodeId;
 }

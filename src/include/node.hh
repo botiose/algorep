@@ -43,6 +43,15 @@ public:
   void
   startReceiveLoop();
 
+  void
+  startAcceptThread() const;
+
+  bool
+  isLeader() const;
+
+  void 
+  replicate(const std::string& data) const;
+
 private:
   Messenger m_messenger; /**< local messenger instance */
 

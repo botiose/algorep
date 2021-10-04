@@ -32,4 +32,5 @@ handleElectionMessage(const Messenger& messenger,
                       const int& srcNodeId,
                       const Message& receivedMessage,
                       int& leaderNodeId);
+
 }; // namespace leader_election

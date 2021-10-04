@@ -7,13 +7,13 @@
 #include "message-info.hh"
 
 // TODO update this to the actual amount required.
-#define MESSAGE_SIZE 1000
+#define MAX_MESSAGE_SIZE 1000
 
 void
 serializeMessage(const Message& message, std::string& messageString) {
   nlohmann::json messageJson = {{"code", message.getCode<int>()},
-               {"id", message.getId()},
-               {"command", message.getCommand()}};
+                                {"id", message.getId()},
+                                {"data", message.getData()}};
 
   messageString = messageJson.dump();
 }
@@ -21,14 +21,19 @@ serializeMessage(const Message& message, std::string& messageString) {
 void
 deserializeMessage(const MessagePassKey& passKey,
                    const std::string& messageString,
+                   const int& tag,
                    Message& message) {
   nlohmann::json messageJson = nlohmann::json::parse(messageString);
 
-  message.setCode<int>(passKey, messageJson["code"]);
-  message.setId(passKey, messageJson["id"]);
-  message.setCommand(passKey, messageJson["command"]);
+  int code;
+  int id;
+  std::shared_ptr<std::string> data = std::make_shared<std::string>();
+  std::string& dataStr = *data.get();
+  messageJson.at("code").get_to(code);
+  messageJson.at("id").get_to(id);
+  messageJson.at("data").get_to(dataStr);
 
-  message.setToValid(passKey);
+  message = Message(passKey, tag, code, id, data);
 }
 
 void
@@ -36,13 +41,12 @@ Messenger::send(const int& dstNodeId, const Message& message) const {
   assert(message.getIsValid());
 
   std::string messageString;
+  messageString.resize(MAX_MESSAGE_SIZE);
   serializeMessage(message, messageString);
-
-  messageString.resize(MESSAGE_SIZE);
 
   int tag = message.getTagInt();
   MPI_Send(messageString.c_str(),
-           MESSAGE_SIZE,
+           MAX_MESSAGE_SIZE,
            MPI_CHAR,
            dstNodeId,
            tag,
@@ -50,52 +54,41 @@ Messenger::send(const int& dstNodeId, const Message& message) const {
 }
 
 void
-Messenger::receiveBlock(int& srcNodeId, Message& message) const {
+receive(const MessagePassKey& passKey,
+        const int& tag,
+        int& srcNodeId,
+        Message& message) {
   MPI_Status status;
 
-  char messageChar[MESSAGE_SIZE];
+  char messageChar[MAX_MESSAGE_SIZE];
 
   MPI_Recv(&messageChar,
-           MESSAGE_SIZE,
-           MPI_CHAR,
-           MPI_ANY_SOURCE,
-           MPI_ANY_TAG,
-           MPI_COMM_WORLD,
-           &status);
-
-  MessagePassKey passKey;
-  std::string messageString(messageChar);
-  deserializeMessage(passKey, messageString, message);
-
-  message.setTag(passKey, status.MPI_TAG);
-
-  srcNodeId = status.MPI_SOURCE;
-}
-
-// TODO make a third inner function to be used in with the receive function
-// to reduce duplicated code
-void
-Messenger::receiveWithTagBlock(const MessageTag& messageTag,
-                               int& srcNodeId,
-                               Message& message) const {
-  int tag = static_cast<int>(messageTag);
-  MPI_Status status;
-
-  char messageChar[MESSAGE_SIZE];
-
-  MPI_Recv(&messageChar,
-           MESSAGE_SIZE,
+           MAX_MESSAGE_SIZE,
            MPI_CHAR,
            MPI_ANY_SOURCE,
            tag,
            MPI_COMM_WORLD,
            &status);
 
-  MessagePassKey passKey;
   std::string messageString(messageChar);
-  deserializeMessage(passKey, messageString, message);
+  deserializeMessage(passKey, messageString, status.MPI_TAG, message);
 
   srcNodeId = status.MPI_SOURCE;
+}
+
+void
+Messenger::receiveBlock(int& srcNodeId, Message& message) const {
+  MessagePassKey passKey;
+  receive(passKey, MPI_ANY_TAG, srcNodeId, message);
+}
+
+void
+Messenger::receiveWithTagBlock(const MessageTag& messageTag,
+                               int& srcNodeId,
+                               Message& message) const {
+  int tag = static_cast<int>(messageTag);
+  MessagePassKey passKey;
+  receive(passKey, tag, srcNodeId, message);
 }
 
 void

@@ -49,13 +49,7 @@ messages between all nodes. To produce this unique identifier an MPI call needs
 to be made, and since by design all MPI call are done through the Messenger
 class, a design choice was made to only allow the Messenger to initialize
 Message instances (this is enforced through the use of the passkey
-idiom). Initilization is done through setters only callable from the Messenger
-class. Privating the constructor and making the Messenger class a friend of
-Message was also considered but discarded for the sake of minimizing potentially
-expensive copies of the string member (currently m_command) in the Message
-class. Having setters allows for a reference of the Message to be passed down to
-the Messenger for initialization and thus minimizes copying. The Messenger and
-Message classes are strongly coupled. 
+idiom).
 
 message-info.hh:
 ----------------

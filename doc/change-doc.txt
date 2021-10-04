@@ -32,7 +32,11 @@ The Messenger class encapsulates the Open MPI API. All MPI calls are done
 through this class. This was done to minimize complexity of the overall design.
 Messengers are lower level abstraction of the MPI API and are meant to be
 instantiated once by each node. That said coupling between these two classes
-still remains fairly minimal and will hopefully remain this way.
+still remains fairly minimal and will hopefully remain this way. The Messenger
+class handles all logic relating to the sending and receiving of Messages.
+Messages are sent and received in the form of character buffers set through
+the serialization and deserialization of the Message class. For this the Json
+format is currently used.
 
 message.hh:
 -----------
@@ -51,12 +55,14 @@ Message was also considered but discarded for the sake of minimizing potentially
 expensive copies of the string member (currently m_command) in the Message
 class. Having setters allows for a reference of the Message to be passed down to
 the Messenger for initialization and thus minimizes copying. The Messenger and
-Message classes are strongly coupled.
+Message classes are strongly coupled. 
 
 message-info.hh:
 ----------------
 
-This file only defines message tags and codes used during communication.
+This file defines message tags and codes used during communication. Tags are
+used for grouping and querying messages of similar types. And codes mostly serve
+as the message itself.
 
 leader-election.hh:
 -------------------

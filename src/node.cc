@@ -2,9 +2,10 @@
 
 #include "node.hh"
 #include "leader-election.hh"
+#include "consensus.hh"
 
 void
-Node::startReceiveLoop() {
+Node::startReceiveLoops() {
   bool isUp = true;
   while (isUp == true) {
     int srcNodeId;
@@ -25,6 +26,10 @@ Node::startReceiveLoop() {
         this->startAcceptThread();
       }
 
+      break;
+    }
+    case MessageTag::CONSENSUS: {
+      consensus::handleConsensusMessage();
       break;
     }
     }
@@ -53,8 +58,8 @@ Node::startAcceptThread() const {
 }
 
 void
-Node::replicate(const std::string& data) const {
-  
+Node::replicateData(const std::string& data) const {
+  consensus::getConsensus(m_messenger, m_nodeId, m_clusterSize, data);
 }
 
 bool

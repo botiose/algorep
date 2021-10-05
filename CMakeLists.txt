@@ -13,6 +13,7 @@ set(SERVER_SRC
   src/message.cc
   src/message-info.cc
   src/leader-election.cc
+  src/consensus.cc
   )
 
 set(CLIENT_SRC

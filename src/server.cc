@@ -11,12 +11,12 @@ main(int argc, char* argv[]) {
 
   if (node.isLeader() == true) {
     node.startAcceptThread();
+   
+    // TODO remove; Used during development of the paxos algorithm. 
+    node.replicateData("Hello World");
   }
 
-  // TODO remove; Used during development of the paxos algorithm.
-  node.replicate("Hello World");
-
-  node.startReceiveLoop();
+  node.startReceiveLoops();
 
   node.stopMessenger();
 

@@ -1,6 +1,5 @@
-#include <mpi.h>
 #include <cassert>
-
+#include <mpi.h>
 #include <json.hpp>
 
 #include "messenger.hh"

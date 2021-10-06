@@ -16,7 +16,7 @@ Messenger::setMessage(const T& code,
                       const std::string& data,
                       Message& message) const {
   MessagePassKey passKey;
-  MessageTag tag = getTagFromCode<T>();
+  int tag = static_cast<int>(getTagFromCode<T>());
   int codeInt = static_cast<int>(code);
   std::shared_ptr<std::string> dataPtr = std::make_shared<std::string>(data);
 

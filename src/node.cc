@@ -59,7 +59,7 @@ Node::startAcceptThread() const {
 
 void
 Node::replicateData(const std::string& data) const {
-  consensus::getConsensus(m_messenger, m_nodeId, m_clusterSize, data);
+  consensus::getConsensus(m_messenger, m_clusterSize, data);
 }
 
 bool

@@ -93,11 +93,9 @@ ConsensusManager::startConsensus(const Messenger& messenger,
 
 void
 ConsensusManager::handleConsensusMessage(const Messenger& messenger,
+                                         const int& clusterSize,
                                          const int& srcNodeId,
                                          const Message& receivedMessage) {
-  UNUSED(messenger);
-  UNUSED(srcNodeId);
-  UNUSED(receivedMessage);
   ConsensusCode code = receivedMessage.getCode<ConsensusCode>();
   int id = receivedMessage.getId();
   switch (code) {
@@ -106,7 +104,7 @@ ConsensusManager::handleConsensusMessage(const Messenger& messenger,
       m_context.maxId = id;
 
       Message promise;
-      if (m_context.valueWasAccepted == true) {
+      if (m_context.valueAccepted == true) {
         nlohmann::json promiseDataJson = {
             {"roundId", id},
             {"acceptedId", m_context.acceptedId},
@@ -124,6 +122,28 @@ ConsensusManager::handleConsensusMessage(const Messenger& messenger,
     }
   }
   case ConsensusCode::ACCEPT: {
+    const std::string& messageData = receivedMessage.getData();
+    nlohmann::json messageJson = nlohmann::json::parse(messageData);
+    int roundId = messageJson.at("roundId");
+    if (roundId == m_context.maxId) {
+      m_context.valueAccepted = true;
+      m_context.acceptedId = roundId;
+      
+      std::string value = messageJson.at("value");
+      m_context.acceptedValue = value;
+      
+      Message accepted;
+      nlohmann::json acceptedDataJson = {
+          {"roundId", id},
+          {"value", m_context.acceptedValue}};
+      const std::string& acceptedData = acceptedDataJson.dump();
+
+      messenger.setMessage(ConsensusCode::ACCEPTED, acceptedData, accepted);
+
+      for (int i = 0; i < clusterSize; i++) {
+        messenger.send(i, accepted);
+      }
+    }
   }
   }
 }

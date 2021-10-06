@@ -30,7 +30,7 @@ Node::startReceiveLoops() {
     }
     case MessageTag::CONSENSUS: {
       m_consensusManager.handleConsensusMessage(
-          m_messenger, srcNodeId, receivedMessage);
+          m_messenger, m_clusterSize, srcNodeId, receivedMessage);
       break;
     }
     }

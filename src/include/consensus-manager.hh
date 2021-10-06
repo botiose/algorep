@@ -12,13 +12,14 @@ public:
                  const std::string& value);
   void
   handleConsensusMessage(const Messenger& messenger,
+                         const int& clusterSize,
                          const int& srcNodeId,
                          const Message& receivedMessage);
 
 private:
   struct ConsensusContext {
     int maxId = -1;
-    bool valueWasAccepted = false;
+    bool valueAccepted = false;
     int acceptedId = -1;
     std::string acceptedValue;
 

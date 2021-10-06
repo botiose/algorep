@@ -2,7 +2,7 @@
 
 #include "node.hh"
 #include "leader-election.hh"
-#include "consensus.hh"
+#include "consensus-manager.hh"
 
 void
 Node::startReceiveLoops() {
@@ -29,7 +29,8 @@ Node::startReceiveLoops() {
       break;
     }
     case MessageTag::CONSENSUS: {
-      consensus::handleConsensusMessage();
+      m_consensusManager.handleConsensusMessage(
+          m_messenger, srcNodeId, receivedMessage);
       break;
     }
     }
@@ -51,15 +52,11 @@ Node::stopMessenger() const {
 void
 Node::startAcceptThread() const {
   // TODO implement
-  // m_messenger.publish();
-  // while (true) {
-  //   m_messenger.acceptConnection();
-  // }
 }
 
 void
 Node::replicateData(const std::string& data) const {
-  consensus::getConsensus(m_messenger, m_clusterSize, data);
+  ConsensusManager::startConsensus(m_messenger, m_clusterSize, data);
 }
 
 bool

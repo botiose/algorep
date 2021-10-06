@@ -2,18 +2,17 @@
 #include <thread>
 #include <optional>
 
-#include "consensus.hh"
+#include "consensus-manager.hh"
 
 #define UNUSED(x) (void)(x)
 
 #define PROMISE_WAIT_DURATION 60
 #define ACCEPT_WAIT_DURATION 60
 
-namespace consensus {
 void
-getConsensus(const Messenger& messenger,
-             const int& clusterSize,
-             const std::string& value) {
+ConsensusManager::startConsensus(const Messenger& messenger,
+                                 const int& clusterSize,
+                                 const std::string& value) {
   bool majorityAccepted = false;
   while (majorityAccepted == false) {
     Message prepare;
@@ -60,7 +59,7 @@ getConsensus(const Messenger& messenger,
 
     if (majorityPromised == true) {
       const std::string& proposeValue =
-          acceptedValue.empty() ? value : acceptedValue;
+          maxAcceptedId == -1 ? value : acceptedValue;
 
       nlohmann::json proposeDataJson = {{"roundId", roundId},
                                         {"value", proposeValue}};
@@ -93,6 +92,38 @@ getConsensus(const Messenger& messenger,
 }
 
 void
-handleConsensusMessage() {
+ConsensusManager::handleConsensusMessage(const Messenger& messenger,
+                                         const int& srcNodeId,
+                                         const Message& receivedMessage) {
+  UNUSED(messenger);
+  UNUSED(srcNodeId);
+  UNUSED(receivedMessage);
+  ConsensusCode code = receivedMessage.getCode<ConsensusCode>();
+  int id = receivedMessage.getId();
+  switch (code) {
+  case ConsensusCode::PREPARE: {
+    if (id > m_context.maxId) {
+      m_context.maxId = id;
+
+      Message promise;
+      if (m_context.valueWasAccepted == true) {
+        nlohmann::json promiseDataJson = {
+            {"roundId", id},
+            {"acceptedId", m_context.acceptedId},
+            {"acceptedValue", m_context.acceptedValue}};
+        const std::string& promiseData = promiseDataJson.dump();
+
+        messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
+
+        messenger.send(srcNodeId, promise);
+      } else {
+        nlohmann::json promiseDataJson = {{"roundId", id}};
+        const std::string& promiseData = promiseDataJson.dump();
+        messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
+      }
+    }
+  }
+  case ConsensusCode::ACCEPT: {
+  }
+  }
 }
-} // namespace consensus

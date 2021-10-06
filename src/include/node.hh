@@ -13,6 +13,7 @@
 #pragma once
 
 #include "messenger.hh"
+#include "consensus-manager.hh"
 
 class Node {
 public:
@@ -54,6 +55,7 @@ public:
 
 private:
   Messenger m_messenger; /**< local messenger instance */
+  ConsensusManager m_consensusManager;
 
   int m_nodeId;       /**< id of the current node */
   int m_clusterSize;  /**< number of nodes in the cluster */

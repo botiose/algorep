@@ -1,15 +1,22 @@
 * TODO open mpi
-** TODO specify explicit buffering for sent messages
-** TODO research non-blocking receive & refactor 'Messenger::receiveWithTag'
-** TODO research thread safety of all used MPI commands
+** DONE research non-blocking receive & refactor 'Messenger::receiveWithTag'
+** DONE research thread safety of all used MPI commands
 ** TODO research whether Open MPI truly supports overwritting published names
 * TODO code design
-** TODO rename every 'command' variable to data
+** TODO rename every 'command' variable to 'data'
 ** TODO restrict instantiation of 'Node's to one per process
 * TODO leader election
 ** DONE comment the bully algorithm
 ** TODO research for the condition in which bully algorithm produces two leaders
+** TODO refactor for multithreading
 * TODO paxos
 ** TODO set the message unique id in the messenger class
+** TODO refactor for multithreading
+** TODO cleanup code 
+** TODO document
 * TODO server-client model
 ** TODO implement leader port publishing 
+** TODO implement accept thread
+** TODO implement failure detection heartbeat thread
+** TODO implement election & consensus thread spawning
+** TODO implement RPC thread

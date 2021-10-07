@@ -55,7 +55,6 @@ public:
                          const int& srcNodeId,
                          const Message& receivedMessage);
 
-private:
   struct ConsensusContext {
     /**
      * @brief Constructor for the ConsensusContext() struct.
@@ -71,5 +70,6 @@ private:
     std::string acceptedValue;  /**< value of the associated accepted round */
   };
 
+private:
   ConsensusContext m_context; /**< current round state/context */
 };

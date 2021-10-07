@@ -180,6 +180,69 @@ ConsensusManager::startConsensus(const Messenger& messenger,
 }
 
 void
+handlePrepareMessage(const Messenger& messenger,
+                     const int& srcNodeId,
+                     const int& id, 
+                     ConsensusManager::ConsensusContext& context) {
+  if (id > context.maxId) {
+    context.maxId = id;
+
+    Message promise;
+    if (context.valueAccepted == true) {
+      nlohmann::json promiseDataJson = {
+          {"roundId", id},
+          {"acceptedId", context.acceptedId},
+          {"acceptedValue", context.acceptedValue}};
+      const std::string& promiseData = promiseDataJson.dump();
+
+      messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
+
+      messenger.send(srcNodeId, promise);
+      std::cout << "PROMISE: sent" << std::endl;
+    } else {
+      nlohmann::json promiseDataJson = {{"roundId", id}};
+      const std::string& promiseData = promiseDataJson.dump();
+      messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
+
+      messenger.send(srcNodeId, promise);
+      std::cout << "PROMISE: sent" << std::endl;
+    }
+  }
+}
+
+void
+handleProposeMessage(const Messenger& messenger,
+                     const int& srcNodeId,
+                     const Message& receivedMessage,
+                     const int& id,
+                     ConsensusManager::ConsensusContext& context) {
+  std::cout << "PROPOSE: received" << std::endl;
+  const std::string& messageData = receivedMessage.getData();
+  nlohmann::json messageJson = nlohmann::json::parse(messageData);
+
+  int roundId = messageJson.at("roundId");
+  if (roundId == context.maxId) {
+    context.valueAccepted = true;
+    context.acceptedId = roundId;
+
+    std::string value = messageJson.at("value");
+    context.acceptedValue = value;
+
+    Message accept;
+    nlohmann::json acceptDataJson = {{"roundId", id},
+                                     {"value", context.acceptedValue}};
+    const std::string& acceptData = acceptDataJson.dump();
+
+    messenger.setMessage(ConsensusCode::ACCEPT, acceptData, accept);
+
+    messenger.send(srcNodeId, accept);
+    std::cout << "ACCEPT: sent" << std::endl;
+
+    context = ConsensusManager::ConsensusContext();
+  }
+}
+
+void
 ConsensusManager::handleConsensusMessage(const Messenger& messenger,
                                          const int& clusterSize,
                                          const int& srcNodeId,
@@ -189,59 +252,11 @@ ConsensusManager::handleConsensusMessage(const Messenger& messenger,
   switch (code) {
   case ConsensusCode::PREPARE: {
     std::cout << "PREPARE: received" << std::endl;
-    if (id > m_context.maxId) {
-      m_context.maxId = id;
-
-      Message promise;
-      if (m_context.valueAccepted == true) {
-        nlohmann::json promiseDataJson = {
-            {"roundId", id},
-            {"acceptedId", m_context.acceptedId},
-            {"acceptedValue", m_context.acceptedValue}};
-        const std::string& promiseData = promiseDataJson.dump();
-
-        messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
-
-        messenger.send(srcNodeId, promise);
-        std::cout << "PROMISE: sent" << std::endl;
-      } else {
-        nlohmann::json promiseDataJson = {{"roundId", id}};
-        const std::string& promiseData = promiseDataJson.dump();
-        messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
-
-        messenger.send(srcNodeId, promise);
-        std::cout << "PROMISE: sent" << std::endl;
-      }
-    }
-
+    handlePrepareMessage(messenger, srcNodeId, id, m_context);
     break;
   }
   case ConsensusCode::PROPOSE: {
-    std::cout << "PROPOSE: received" << std::endl;
-    const std::string& messageData = receivedMessage.getData();
-    nlohmann::json messageJson = nlohmann::json::parse(messageData);
-
-    int roundId = messageJson.at("roundId");
-    if (roundId == m_context.maxId) {
-      m_context.valueAccepted = true;
-      m_context.acceptedId = roundId;
-      
-      std::string value = messageJson.at("value");
-      m_context.acceptedValue = value;
-      
-      Message accept;
-      nlohmann::json acceptDataJson = {
-          {"roundId", id},
-          {"value", m_context.acceptedValue}};
-      const std::string& acceptData = acceptDataJson.dump();
-
-      messenger.setMessage(ConsensusCode::ACCEPT, acceptData, accept);
-
-      messenger.send(srcNodeId, accept);
-      std::cout << "ACCEPT: sent" << std::endl;
-
-      m_context = ConsensusContext{};
-    }
+    handleProposeMessage(messenger, srcNodeId, receivedMessage, id, m_context);
     break;
   }
   }

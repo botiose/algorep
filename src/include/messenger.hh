@@ -57,13 +57,29 @@ public:
   void
   getClusterSize(int& clusterSize) const;
 
+  /** 
+   * @brief Initializes the message with the given code.
+   * 
+   * This function initializes messages with additional information useful
+   * during communication.
+   * 
+   * @param code message code
+   * @param message message to initialize
+   */
   template <typename T>
   void
   setMessage(const T& code, Message& message) const;
 
+  /** 
+   * @brief Initializes the message with the given code and data string.
+   * 
+   * @param code message code
+   * @param data message data
+   * @param message message to initialize
+   */
   template <typename T>
   void
-  setMessage(const T& code, const std::string& command, Message& message) const;
+  setMessage(const T& code, const std::string& data, Message& message) const;
 
   /**
    * @brief Sends the given message to the specified node.
@@ -128,6 +144,9 @@ public:
   acceptConnection() const;
 
 private:
+  void
+  generateUniqueId(const int& nodeId, int& id) const;
+
   int m_rank; /**< rank of the current process */
 };
 

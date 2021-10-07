@@ -136,3 +136,10 @@ void
 Messenger::acceptConnection() const {
   // TODO implement
 }
+
+void
+Messenger::generateUniqueId(const int& nodeId, int& id) const {
+  int time = static_cast<int>(MPI_Wtime());
+
+  id = time | nodeId;
+}

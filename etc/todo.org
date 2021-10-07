@@ -10,13 +10,16 @@
 ** TODO research for the condition in which bully algorithm produces two leaders
 ** TODO refactor for multithreading
 * TODO paxos
-** TODO set the message unique id in the messenger class
+** DONE set the message unique id in the messenger class
 ** TODO refactor for multithreading
 ** TODO cleanup code 
 ** TODO document
-* TODO server-client model
+* TODO server
 ** TODO implement leader port publishing 
 ** TODO implement accept thread
 ** TODO implement failure detection heartbeat thread
 ** TODO implement election & consensus thread spawning
 ** TODO implement RPC thread
+* TODO client
+** TODO implement random command generation
+** TODO implement server communication

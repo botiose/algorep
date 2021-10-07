@@ -47,15 +47,25 @@ public:
   void
   startAcceptThread() const;
 
+  /**
+   * @brief returns whether the current node is a leader or not.
+   *
+   * @return whether the current node is a leader.
+   */
   bool
   isLeader() const;
 
-  void 
+  /**
+   * @brief replicates the given data along all nodes in the cluster.
+   *
+   * @param[in] data data to replicate.
+   */
+  void
   replicateData(const std::string& data) const;
 
 private:
-  Messenger m_messenger; /**< local messenger instance */
-  ConsensusManager m_consensusManager;
+  Messenger m_messenger;               /**< local messenger instance */
+  ConsensusManager m_consensusManager; /**< manager for consensus logic */
 
   int m_nodeId;       /**< id of the current node */
   int m_clusterSize;  /**< number of nodes in the cluster */

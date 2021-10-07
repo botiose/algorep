@@ -8,6 +8,7 @@ class ConsensusManager {
 public:
   static void
   startConsensus(const Messenger& messenger,
+                 const int& nodeId, // TODO remove
                  const int& clusterSize,
                  const std::string& value);
   void

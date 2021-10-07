@@ -56,7 +56,10 @@ Node::startAcceptThread() const {
 
 void
 Node::replicateData(const std::string& data) const {
-  ConsensusManager::startConsensus(m_messenger, m_clusterSize, data);
+  ConsensusManager::startConsensus(m_messenger,
+                                   m_nodeId, // TODO remove
+                                   m_clusterSize,
+                                   data);
 }
 
 bool

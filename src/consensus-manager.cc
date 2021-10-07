@@ -14,7 +14,6 @@ broadcastPrepare(const Messenger& messenger,
                  const int& nodeId, // TODO remove
                  const int& clusterSize,
                  int& roundId) {
-  std::cout << "start" << std::endl;
   Message prepare;
   messenger.setMessage(ConsensusCode::PREPARE, prepare);
 
@@ -22,9 +21,8 @@ broadcastPrepare(const Messenger& messenger,
     if (i == nodeId) { // TODO remove
       continue;
     }
-    messenger.send(i, prepare);
 
-    std::cout << "PREPARE: sent" << std::endl;
+    messenger.send(i, prepare);
   }
 
   roundId = prepare.getId();
@@ -55,7 +53,6 @@ receivePromises(const Messenger& messenger,
       if (messageReceived == true) {
         ConsensusCode code = promise.getCode<ConsensusCode>();
         if (code == ConsensusCode::PROMISE) {
-          std::cout << "PROMISE: received" << std::endl;
           const std::string& messageData = promise.getData();
           nlohmann::json messageJson = nlohmann::json::parse(messageData);
 
@@ -100,8 +97,8 @@ broadcastPropose(const Messenger& messenger,
     if (i == nodeId) { // TODO remove
       continue;
     }
+
     messenger.send(i, propose);
-    std::cout << "PROPOSE: sent" << std::endl;
   }
 }
 
@@ -127,7 +124,6 @@ receiveAccepts(const Messenger& messenger,
     if (messageReceived == true) {
       ConsensusCode code = accept.getCode<ConsensusCode>();
       if (code == ConsensusCode::ACCEPT) {
-        std::cout << "ACCEPT: received" << std::endl;
         acceptCount += 1;
       }
     }
@@ -173,7 +169,7 @@ ConsensusManager::startConsensus(const Messenger& messenger,
       receiveAccepts(messenger, clusterSize, roundId, majorityAccepted);
 
       if (majorityAccepted == true) {
-        std::cout << "CONSENSUS REACHED" << std::endl; 
+        // TODO replicate
       }
     }
   }
@@ -194,18 +190,15 @@ handlePrepareMessage(const Messenger& messenger,
           {"acceptedId", context.acceptedId},
           {"acceptedValue", context.acceptedValue}};
       const std::string& promiseData = promiseDataJson.dump();
-
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
       messenger.send(srcNodeId, promise);
-      std::cout << "PROMISE: sent" << std::endl;
     } else {
       nlohmann::json promiseDataJson = {{"roundId", id}};
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
       messenger.send(srcNodeId, promise);
-      std::cout << "PROMISE: sent" << std::endl;
     }
   }
 }
@@ -216,7 +209,6 @@ handleProposeMessage(const Messenger& messenger,
                      const Message& receivedMessage,
                      const int& id,
                      ConsensusManager::ConsensusContext& context) {
-  std::cout << "PROPOSE: received" << std::endl;
   const std::string& messageData = receivedMessage.getData();
   nlohmann::json messageJson = nlohmann::json::parse(messageData);
 
@@ -236,7 +228,6 @@ handleProposeMessage(const Messenger& messenger,
     messenger.setMessage(ConsensusCode::ACCEPT, acceptData, accept);
 
     messenger.send(srcNodeId, accept);
-    std::cout << "ACCEPT: sent" << std::endl;
 
     context = ConsensusManager::ConsensusContext();
   }
@@ -251,7 +242,6 @@ ConsensusManager::handleConsensusMessage(const Messenger& messenger,
   int id = receivedMessage.getId();
   switch (code) {
   case ConsensusCode::PREPARE: {
-    std::cout << "PREPARE: received" << std::endl;
     handlePrepareMessage(messenger, srcNodeId, id, m_context);
     break;
   }

@@ -114,7 +114,13 @@ Messenger::receiveWithTag(const MessageTag& messageTag,
 
 void
 Messenger::start(int& rank, int& clusterSize) {
-  MPI_Init(0, 0);
+  int provided;
+  MPI_Init_thread(0, 0, MPI_THREAD_MULTIPLE, &provided);
+
+  if (provided < MPI_THREAD_MULTIPLE) {
+    std::cerr << "messenger.cc: Multithreading not supported." << std::endl;
+    MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+  }
 
   MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
   rank = m_rank;

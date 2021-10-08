@@ -35,46 +35,46 @@ receivePromises(const Messenger& messenger,
                 bool& majorityPromised,
                 int& maxAcceptedId,
                 std::string& acceptedValue) {
-    bool messageReceived = false;
-    int promiseCount = 0;
-    maxAcceptedId = -1;
+  bool messageReceived = false;
+  int promiseCount = 0;
+  maxAcceptedId = -1;
 
-    using namespace std::chrono;
-    auto start = high_resolution_clock::now();
-    auto cur = high_resolution_clock::now();
-    int elapsed = 0;
+  using namespace std::chrono;
+  auto start = high_resolution_clock::now();
+  auto cur = high_resolution_clock::now();
+  int elapsed = 0;
 
-    while(elapsed < PROMISE_WAIT_DURATION) {
-      int srcNodeId;
-      Message promise;
-      messenger.receiveWithTag(
-          MessageTag::CONSENSUS, messageReceived, srcNodeId, promise);
+  while (elapsed < PROMISE_WAIT_DURATION) {
+    int srcNodeId;
+    Message promise;
+    messenger.receiveWithTag(
+        MessageTag::CONSENSUS, messageReceived, srcNodeId, promise);
 
-      if (messageReceived == true) {
-        ConsensusCode code = promise.getCode<ConsensusCode>();
-        if (code == ConsensusCode::PROMISE) {
-          const std::string& messageData = promise.getData();
-          nlohmann::json messageJson = nlohmann::json::parse(messageData);
+    if (messageReceived == true) {
+      ConsensusCode code = promise.getCode<ConsensusCode>();
+      if (code == ConsensusCode::PROMISE) {
+        const std::string& messageData = promise.getData();
+        nlohmann::json messageJson = nlohmann::json::parse(messageData);
 
-          int id = messageJson.at("roundId");
+        int id = messageJson.at("roundId");
 
-          if (id == roundId) {
-            int acceptedId = messageJson.value("acceptedId", -1);
+        if (id == roundId) {
+          int acceptedId = messageJson.value("acceptedId", -1);
 
-            if (acceptedId > maxAcceptedId) {
-              acceptedValue = messageJson.value("acceptedValue", "");
-            }
-
-            promiseCount += 1;
+          if (acceptedId > maxAcceptedId) {
+            acceptedValue = messageJson.value("acceptedValue", "");
           }
+
+          promiseCount += 1;
         }
       }
-
-      cur = high_resolution_clock::now();
-      elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
     }
 
-    majorityPromised = promiseCount >= (clusterSize / 2);
+    cur = high_resolution_clock::now();
+    elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
+  }
+
+  majorityPromised = promiseCount >= (clusterSize / 2);
 }
 
 void
@@ -144,7 +144,7 @@ ConsensusManager::startConsensus(const Messenger& messenger,
     int roundId;
     broadcastPrepare(messenger,
                      nodeId, // TODO remove
-                     clusterSize, 
+                     clusterSize,
                      roundId);
 
     bool majorityPromised;
@@ -178,7 +178,7 @@ ConsensusManager::startConsensus(const Messenger& messenger,
 void
 handlePrepareMessage(const Messenger& messenger,
                      const int& srcNodeId,
-                     const int& id, 
+                     const int& id,
                      ConsensusManager::ConsensusContext& context) {
   if (id > context.maxId) {
     context.maxId = id;

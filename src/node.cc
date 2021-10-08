@@ -37,6 +37,7 @@ Node::startReceiveLoops() {
   }
 }
 
+// TODO remove
 void
 Node::startMessenger() {
   m_messenger.start(m_nodeId, m_clusterSize);
@@ -44,6 +45,7 @@ Node::startMessenger() {
   m_leaderNodeId = m_clusterSize - 1;
 }
 
+// TODO remove
 void
 Node::stopMessenger() const {
   m_messenger.stop();
@@ -65,4 +67,14 @@ Node::replicateData(const std::string& data) const {
 bool
 Node::isLeader() const {
   return m_nodeId == m_leaderNodeId;
+}
+
+void
+createNode() const {
+  // TODO implement
+}
+
+void
+destroyNode() const {
+  // TODO implement
 }

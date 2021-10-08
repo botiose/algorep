@@ -18,8 +18,12 @@
 ** TODO implement leader port publishing 
 ** TODO implement accept thread
 ** TODO implement failure detection heartbeat thread
-** TODO implement election & consensus thread spawning
-** TODO implement RPC thread
+** TODO implement election thread
+** TODO implement consensus thread
+** TODO implement REPL thread
+** TODO implement derived MessageHandler classes for each thread/tag
+** TODO implement the MessageHandler class
+** TODO move accept thread spawning in main to Node::create
 * TODO client
 ** TODO implement random command generation
 ** TODO implement server communication

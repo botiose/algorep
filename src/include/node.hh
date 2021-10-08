@@ -22,12 +22,20 @@ public:
    */
   Node() = default;
 
+  void
+  init() const;
+
+  void
+  destroy() const;
+
+  // TODO remove
   /**
    * @brief Starts the node's messenger and initializes cluster info members.
    */
   void
   startMessenger();
 
+  // TODO remove
   /**
    * @brief Stops the node's messenger.
    */

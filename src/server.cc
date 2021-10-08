@@ -7,8 +7,10 @@ int
 main(int argc, char* argv[]) {
   Node node{};
 
+  // TODO remove
   node.startMessenger();
 
+  // TODO remove
   if (node.isLeader() == true) {
     node.startAcceptThread();
    
@@ -16,8 +18,10 @@ main(int argc, char* argv[]) {
     node.replicateData("Hello World");
   }
 
+  // TODO rename
   node.startReceiveLoops();
 
+  // TODO remove
   node.stopMessenger();
 
   return 0;

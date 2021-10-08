@@ -15,8 +15,7 @@ declareVictory(const Messenger& messenger,
                int& victorNodeId) {
   Message victoryMessage;
 
-  messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::VICTORY,
-                                           victoryMessage);
+  messenger.setMessage(LeaderElectionCode::VICTORY, victoryMessage);
 
   for (int i = 0; i < clusterSize; i++) {
     if (i == nodeId) {
@@ -74,8 +73,7 @@ busyLeaderElectionWait(const Messenger& messenger,
         // process with a lower ID it sends an Answer message back and
         // contineous the current election.
         Message activeMessage;
-        messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::ALIVE,
-                                                 activeMessage);
+        messenger.setMessage(LeaderElectionCode::ALIVE, activeMessage);
 
         messenger.send(srcNodeId, activeMessage);
         break;
@@ -111,7 +109,7 @@ startElection(const Messenger& messenger,
   int victorNodeId;
   while (gotVictor == false) {
     Message message;
-    messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::ELECTION, message);
+    messenger.setMessage(LeaderElectionCode::ELECTION, message);
 
     for (int dstNodeId = nodeId + 1; dstNodeId < clusterSize; dstNodeId++) {
       messenger.send(dstNodeId, message);
@@ -144,8 +142,7 @@ handleElectionMessage(const Messenger& messenger,
     // higher-numbered processes.
     Message activeMessage;
 
-    messenger.setMessage<LeaderElectionCode>(LeaderElectionCode::ALIVE,
-                                             activeMessage);
+    messenger.setMessage(LeaderElectionCode::ALIVE, activeMessage);
     messenger.send(srcNodeId, activeMessage);
 
     if (srcNodeId < nodeId) {
@@ -160,5 +157,4 @@ handleElectionMessage(const Messenger& messenger,
   }
   }
 }
-
 } // namespace leader_election

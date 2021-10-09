@@ -1,10 +1,24 @@
 #pragma once
 
-enum class MessageTag { LEADER_ELECTION, CONSENSUS, REPL, SIZE };
+enum class MessageTag {
+  LEADER_ELECTION,
+  CONSENSUS,
+  REPL,
+  FAIL_DETECTION,
+  CLIENT,
+  SIZE
+};
 
-enum class LeaderElectionCode { ELECTION, ALIVE, VICTORY, SIZE };
+enum class LeaderElectionCode { SHUTDOWN, ELECTION, ALIVE, VICTORY, SIZE };
 
-enum class ConsensusCode { PREPARE, PROMISE, PROPOSE, ACCEPT, SIZE };
+enum class ConsensusCode { SHUTDOWN, PREPARE, PROMISE, PROPOSE, ACCEPT, SIZE };
+
+enum class ReplCode { SHUTDOWN, START, SPEED, CRASH, RECOVER, SIZE };
+
+enum class FailDetectionCode { SHUTDOWN, SIZE };
+
+enum class ClientCode { SHUTDOWN, SIZE };
+
 
 template <typename T>
 MessageTag

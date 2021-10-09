@@ -3,57 +3,36 @@
 #include "node.hh"
 #include "leader-election.hh"
 #include "consensus-manager.hh"
+#include "receiver-manager.hh"
+#include "repl-receiver.hh"
+#include "election-receiver.hh"
+#include "consensus-receiver.hh"
+#include "fail-receiver.hh"
+#include "client-receiver.hh"
 
 void
-Node::startReceiveLoops() {
-  bool isUp = true;
-  while (isUp == true) {
-    int srcNodeId;
-    Message receivedMessage;
-    m_messenger.receiveBlock(srcNodeId, receivedMessage);
+Node::startMainLoops() {
+  if (this->isLeader() == true) {
+    // node.startAcceptThread();
+  }  
 
-    MessageTag messageTag = receivedMessage.getTag();
-    switch (messageTag) {
-    case MessageTag::LEADER_ELECTION: {
-      leader_election::handleElectionMessage(m_messenger,
-                                             m_nodeId,
-                                             m_clusterSize,
-                                             srcNodeId,
-                                             receivedMessage,
-                                             m_leaderNodeId);
+  ReceiverManager receiverManager{};
 
-      if (this->isLeader() == true) {
-        this->startAcceptThread();
-      }
+  ReplReceiver replReceiver(m_messenger);
+  ElectionReceiver electionReceiver(m_messenger);
+  ConsensusReceiver consensusReceiver(m_messenger);
+  FailReceiver failReceiver(m_messenger);
+  ClientReceiver clientReceiver(m_messenger);
 
-      break;
-    }
-    case MessageTag::CONSENSUS: {
-      m_consensusManager.handleConsensusMessage(
-          m_messenger, m_clusterSize, srcNodeId, receivedMessage);
-      break;
-    }
-    }
-  }
-}
+  receiverManager.addReceiver(replReceiver);
+  receiverManager.addReceiver(electionReceiver);
+  receiverManager.addReceiver(consensusReceiver);
+  receiverManager.addReceiver(failReceiver);
+  receiverManager.addReceiver(clientReceiver);
 
-// TODO remove
-void
-Node::startMessenger() {
-  m_messenger.start(m_nodeId, m_clusterSize);
+  receiverManager.startReceiverLoops();
 
-  m_leaderNodeId = m_clusterSize - 1;
-}
-
-// TODO remove
-void
-Node::stopMessenger() const {
-  m_messenger.stop();
-}
-
-void
-Node::startAcceptThread() const {
-  // TODO implement
+  receiverManager.waitForReceivers();
 }
 
 void
@@ -70,11 +49,13 @@ Node::isLeader() const {
 }
 
 void
-createNode() const {
-  // TODO implement
+Node::init() {
+  m_messenger.start(m_nodeId, m_clusterSize);
+
+  m_leaderNodeId = m_clusterSize - 1;
 }
 
 void
-destroyNode() const {
-  // TODO implement
+Node::destroy() const {
+  m_messenger.stop();
 }

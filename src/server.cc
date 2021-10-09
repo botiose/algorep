@@ -7,22 +7,17 @@ int
 main(int argc, char* argv[]) {
   Node node{};
 
-  // TODO remove
-  node.startMessenger();
+  node.init();
 
   // TODO remove
   if (node.isLeader() == true) {
-    node.startAcceptThread();
-   
-    // TODO remove; Used during development of the paxos algorithm. 
     node.replicateData("Hello World");
   }
 
   // TODO rename
-  node.startReceiveLoops();
+  node.startMainLoops();
 
-  // TODO remove
-  node.stopMessenger();
+  node.destroy();
 
   return 0;
 }

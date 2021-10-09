@@ -47,6 +47,9 @@ public:
   getCode() const;
 
   int
+  getCodeInt() const;
+
+  int
   getId() const;
 
   const std::string&

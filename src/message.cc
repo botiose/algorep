@@ -44,3 +44,8 @@ bool
 Message::getIsValid() const {
   return m_isValid;
 }
+
+int
+Message::getCodeInt() const {
+  return m_code;
+}

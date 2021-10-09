@@ -14,6 +14,13 @@ set(SERVER_SRC
   src/message-info.cc
   src/leader-election.cc
   src/consensus-manager.cc
+  src/receiver/message-receiver.cc
+  src/receiver/receiver-manager.cc
+  src/receiver/repl-receiver.cc
+  src/receiver/election-receiver.cc
+  src/receiver/consensus-receiver.cc
+  src/receiver/fail-receiver.cc
+  src/receiver/client-receiver.cc
   )
 
 set(CLIENT_SRC
@@ -41,6 +48,7 @@ target_include_directories(client PUBLIC
 target_include_directories(server PUBLIC
   "${PROJECT_SOURCE_DIR}/extern/json"
   "${PROJECT_SOURCE_DIR}/src/include"
+  "${PROJECT_SOURCE_DIR}/src/include/receiver"
   )
 
 # CROSSCOMPILE CLIENT TARGET

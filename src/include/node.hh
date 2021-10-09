@@ -23,24 +23,10 @@ public:
   Node() = default;
 
   void
-  init() const;
+  init();
 
   void
   destroy() const;
-
-  // TODO remove
-  /**
-   * @brief Starts the node's messenger and initializes cluster info members.
-   */
-  void
-  startMessenger();
-
-  // TODO remove
-  /**
-   * @brief Stops the node's messenger.
-   */
-  void
-  stopMessenger() const;
 
   /**
    * @brief Starts the receive loop.
@@ -50,10 +36,7 @@ public:
    *
    */
   void
-  startReceiveLoops();
-
-  void
-  startAcceptThread() const;
+  startMainLoops();
 
   /**
    * @brief returns whether the current node is a leader or not.

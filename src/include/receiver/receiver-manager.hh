@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <thread>
+#include <memory>
 
 #include "message-receiver.hh"
 
@@ -10,15 +11,12 @@ public:
   ReceiverManager() = default;
 
   void
-  addReceiver(MessageReceiver& receiver);
-
-  void
-  startReceiverLoops();
+  startReceiver(std::shared_ptr<MessageReceiver> receiver);
 
   void
   waitForReceivers();
 
 private:
-  std::vector<MessageReceiver*> m_receivers;
+  std::vector<std::shared_ptr<MessageReceiver>> m_receivers;
   std::vector<std::thread> m_threads;
 };

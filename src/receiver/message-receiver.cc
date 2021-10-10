@@ -14,7 +14,6 @@ MessageReceiver::startReceiveLoop() {
     int srcNodeId;
     Message receivedMessage;
 
-    std::cout << (int)m_tag << std::endl; 
     m_messenger.receiveWithTagBlock(m_tag, srcNodeId, receivedMessage);
 
     isUp = receivedMessage.getCodeInt() != 0;

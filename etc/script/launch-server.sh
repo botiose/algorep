@@ -32,3 +32,4 @@ for archs in $(jq -rc ".nodes | to_entries[]" <<< "$config"); do
 done
 
 mpirun --ompi-server file:../../etc/urifile ${args::-1}
+# mpirun --ompi-server file:../../etc/urifile --host laptop $projectPath/build/$arch/bin/server

@@ -1,4 +1,4 @@
- /**
+/**
  * @file   messenger.hh
  * @author Otiose email
  * @date   Thu Sep 30 14:33:41 2021
@@ -11,11 +11,17 @@
  */
 #pragma once
 
+#include <mpi.h>
+
 #include "message.hh"
 #include "message-info.hh"
 
 class Messenger {
 public:
+  struct Connection {
+    MPI_Comm connection;
+  };
+
   /**
    * @brief Default Messenger construct.
    *
@@ -57,12 +63,12 @@ public:
   void
   getClusterSize(int& clusterSize) const;
 
-  /** 
+  /**
    * @brief Initializes the message with the given code.
-   * 
+   *
    * This function initializes messages with additional information useful
    * during communication.
-   * 
+   *
    * @param code message code
    * @param message message to initialize
    */
@@ -70,9 +76,9 @@ public:
   void
   setMessage(const T& code, Message& message) const;
 
-  /** 
+  /**
    * @brief Initializes the message with the given code and data string.
-   * 
+   *
    * @param code message code
    * @param data message data
    * @param message message to initialize
@@ -88,7 +94,9 @@ public:
    * @param[in] message message to send.
    */
   void
-  send(const int& dstNodeId, const Message& message) const;
+  send(const int& dstNodeId,
+       const Message& message,
+       const Connection& connection = {MPI_COMM_WORLD}) const;
 
   /**
    * @brief Blocks until a message is received.
@@ -97,7 +105,9 @@ public:
    * @param[out] message message received.
    */
   void
-  receiveBlock(int& srcNodeId, Message& message) const;
+  receiveBlock(int& srcNodeId,
+               Message& message,
+               const Connection& connection = {MPI_COMM_WORLD}) const;
 
   /**
    * @brief Blocks until a message of specified tag is received.
@@ -109,7 +119,8 @@ public:
   void
   receiveWithTagBlock(const MessageTag& messageTag,
                       int& srcNodeId,
-                      Message& message) const;
+                      Message& message,
+                      const Connection& connection = {MPI_COMM_WORLD}) const;
 
   /**
    * @brief Receives a pending message with given tag.
@@ -126,7 +137,8 @@ public:
   receiveWithTag(const MessageTag& messageTag,
                  bool& messageReceived,
                  int& srcNodeId,
-                 Message& message) const;
+                 Message& message,
+                 const Connection& connection = {MPI_COMM_WORLD}) const;
 
   /**
    * @brief Check whether a message with given tag is pending.
@@ -135,19 +147,41 @@ public:
    * @param[out] hasPending whether there's a pending message.
    */
   void
-  hasPendingWithTag(const MessageTag& messageTag, bool& hasPending) const;
+  hasPendingWithTag(const MessageTag& messageTag,
+                    bool& hasPending,
+                    const Connection& connection = {MPI_COMM_WORLD}) const;
 
   void
-  publish() const;
+  probeTagBlock(const Connection& connection, MessageTag& messageTag) const;
+  
+  void
+  publish();
 
   void
-  acceptConnection() const;
+  unpublish();
+
+  void
+  acceptConnection(Connection& connection) const;
+
+  bool
+  getIsPublished() const;
+
+  void
+  selfConnect(Connection& connection) const;
+
+  void
+  connect(Connection& connection);
+
+  void
+  disconnect(Connection& connection);
 
 private:
   void
   generateUniqueId(const int& nodeId, int& id) const;
 
   int m_rank; /**< rank of the current process */
+  bool m_isPublished = false;
+  char m_port[MPI_MAX_PORT_NAME];
 };
 
 #include "messenger.hxx"

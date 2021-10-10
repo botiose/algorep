@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY bin)
 
 set(SERVER_SRC
-  src/server.cc
+  src/server-main.cc
   src/node.cc
   src/messenger.cc
   src/message.cc
@@ -24,7 +24,11 @@ set(SERVER_SRC
   )
 
 set(CLIENT_SRC
+  src/client-main.cc
   src/client.cc
+  src/messenger.cc
+  src/message.cc
+  src/message-info.cc
   )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -41,14 +45,18 @@ add_executable(client
   ${CLIENT_SRC}
   )
 
-target_include_directories(client PUBLIC
-  "${PROJECT_SOURCE_DIR}/src/include"
-  )
-
-target_include_directories(server PUBLIC
+set(COMMON_INCLUDES
   "${PROJECT_SOURCE_DIR}/extern/json"
   "${PROJECT_SOURCE_DIR}/src/include"
   "${PROJECT_SOURCE_DIR}/src/include/receiver"
+  )
+
+target_include_directories(client PUBLIC
+  ${COMMON_INCLUDES}
+  )
+
+target_include_directories(server PUBLIC
+  ${COMMON_INCLUDES}
   )
 
 # CROSSCOMPILE CLIENT TARGET

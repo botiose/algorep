@@ -1,5 +1,8 @@
 #pragma once
 
+#include <mutex>
+#include <list>
+
 #include "message-receiver.hh"
 #include "messenger.hh"
 
@@ -12,4 +15,12 @@ public:
 
   void
   handleMessage(const int& srcNodeId, const Message& receivedMessage) final;
+
+  void
+  addConnection(Messenger::Connection connection);
+
+private:
+  std::mutex m_mutex;
+
+  std::list<Messenger::Connection> m_clientConnections;
 };

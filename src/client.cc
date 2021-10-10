@@ -1,13 +1,21 @@
-#include <iostream>
-#include <stdio.h>
-#include "mpi.h"
+#include "client.hh"
 
-int
-main(int argc, char* argv[]) {
-  MPI_Init(&argc, &argv);
+void
+Client::connect() {
+  int rank;
+  int clusterSize;
+  m_messenger.start(rank, clusterSize);
 
-  MPI_Finalize();
+  m_messenger.connect(m_serverConnection);
 
-  return 0;
+  // TODO send connect code
 }
 
+void
+Client::disconnect() {
+  // TODO send disconnect code
+ 
+  m_messenger.disconnect(m_serverConnection);
+
+  m_messenger.stop();
+}

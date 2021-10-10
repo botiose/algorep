@@ -12,6 +12,9 @@
  */
 #pragma once
 
+#include <thread>
+
+#include "receiver-manager.hh"
 #include "messenger.hh"
 #include "consensus-manager.hh"
 
@@ -54,11 +57,21 @@ public:
   void
   replicateData(const std::string& data) const;
 
+  void
+  enableClientCommunication();
+
+  void
+  disableClientCommunication();
+
 private:
+  ReceiverManager m_receiverManager;
+
   Messenger m_messenger;               /**< local messenger instance */
   ConsensusManager m_consensusManager; /**< manager for consensus logic */
 
   int m_nodeId;       /**< id of the current node */
   int m_clusterSize;  /**< number of nodes in the cluster */
   int m_leaderNodeId; /**< id of the leader node */
+
+  std::thread m_acceptConnThread;
 };

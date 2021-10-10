@@ -1,5 +1,4 @@
 #include <cassert>
-#include <mpi.h>
 #include <json.hpp>
 
 #include "messenger.hh"
@@ -7,6 +6,7 @@
 
 // TODO update this to the actual amount required.
 #define MAX_MESSAGE_SIZE 1000
+#define SERVER_NAME "server"
 
 void
 serializeMessage(const Message& message, std::string& messageString) {
@@ -36,7 +36,9 @@ deserializeMessage(const MessagePassKey& passKey,
 }
 
 void
-Messenger::send(const int& dstNodeId, const Message& message) const {
+Messenger::send(const int& dstNodeId,
+                const Message& message,
+                const Messenger::Connection& connection) const {
   assert(message.getIsValid());
 
   std::string messageString;
@@ -49,12 +51,13 @@ Messenger::send(const int& dstNodeId, const Message& message) const {
            MPI_CHAR,
            dstNodeId,
            tag,
-           MPI_COMM_WORLD);
+           connection.connection);
 }
 
 void
 receive(const MessagePassKey& passKey,
         const int& tag,
+        const Messenger::Connection& connection,
         int& srcNodeId,
         Message& message) {
   MPI_Status status;
@@ -66,7 +69,7 @@ receive(const MessagePassKey& passKey,
            MPI_CHAR,
            MPI_ANY_SOURCE,
            tag,
-           MPI_COMM_WORLD,
+           connection.connection,
            &status);
 
   std::string messageString(messageChar);
@@ -76,39 +79,53 @@ receive(const MessagePassKey& passKey,
 }
 
 void
-Messenger::receiveBlock(int& srcNodeId, Message& message) const {
+Messenger::receiveBlock(int& srcNodeId,
+                        Message& message,
+                        const Messenger::Connection& connection) const {
   MessagePassKey passKey;
-  receive(passKey, MPI_ANY_TAG, srcNodeId, message);
+  receive(passKey, MPI_ANY_TAG, connection, srcNodeId, message);
 }
 
 void
 Messenger::receiveWithTagBlock(const MessageTag& messageTag,
                                int& srcNodeId,
-                               Message& message) const {
+                               Message& message,
+                               const Messenger::Connection& connection) const {
   int tag = static_cast<int>(messageTag);
   MessagePassKey passKey;
-  receive(passKey, tag, srcNodeId, message);
+  receive(passKey, tag, connection, srcNodeId, message);
 }
 
 void
 Messenger::hasPendingWithTag(const MessageTag& messageTag,
-                             bool& hasPending) const {
+                             bool& hasPending,
+                             const Messenger::Connection& connection) const {
   int tag = static_cast<int>(messageTag);
   MPI_Status status;
   int flag;
-  MPI_Iprobe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &flag, &status);
+  MPI_Iprobe(MPI_ANY_SOURCE, tag, connection.connection, &flag, &status);
 
   hasPending = flag == 1;
+}
+
+void
+Messenger::probeTagBlock(const Connection& connection,
+                         MessageTag& messageTag) const {
+  MPI_Status status;
+  MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, connection.connection, &status);
+
+  messageTag = static_cast<MessageTag>(status.MPI_TAG);
 }
 
 void
 Messenger::receiveWithTag(const MessageTag& messageTag,
                           bool& messageReceived,
                           int& srcNodeId,
-                          Message& message) const {
-  hasPendingWithTag(messageTag, messageReceived);
+                          Message& message,
+                          const Messenger::Connection& connection) const {
+  hasPendingWithTag(messageTag, messageReceived, connection);
   if (messageReceived == true) {
-    receiveWithTagBlock(messageTag, srcNodeId, message);
+    receiveWithTagBlock(messageTag, srcNodeId, message, connection);
   }
 }
 
@@ -134,13 +151,41 @@ Messenger::stop() const {
 }
 
 void
-Messenger::publish() const {
-  // TODO implement
+Messenger::publish() {
+  assert(m_isPublished == false);
+
+  MPI_Open_port(MPI_INFO_NULL, m_port);
+
+  MPI_Info scopeInfo;
+  MPI_Info_create(&scopeInfo);
+  MPI_Info_set(scopeInfo, "ompi_global_scope", "true");
+
+  MPI_Publish_name(SERVER_NAME, scopeInfo, m_port);
+
+  m_isPublished = true;
 }
 
 void
-Messenger::acceptConnection() const {
-  // TODO implement
+Messenger::unpublish() {
+  assert(m_isPublished == true);
+
+  MPI_Info scopeInfo;
+  MPI_Info_create(&scopeInfo);
+  MPI_Info_set(scopeInfo, "ompi_global_scope", "true");
+
+  MPI_Unpublish_name(SERVER_NAME, scopeInfo, m_port);
+
+  MPI_Close_port(m_port);
+
+  m_isPublished = false;
+}
+
+void
+Messenger::acceptConnection(Messenger::Connection& connection) const {
+  assert(m_isPublished == true);
+
+  MPI_Comm_accept(
+      m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
 }
 
 void
@@ -148,4 +193,30 @@ Messenger::generateUniqueId(const int& nodeId, int& id) const {
   int time = static_cast<int>(MPI_Wtime());
 
   id = time | nodeId;
+}
+
+bool
+Messenger::getIsPublished() const {
+  return m_isPublished;
+}
+
+void
+Messenger::selfConnect(Messenger::Connection& connection) const {
+  MPI_Comm_connect(
+      m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
+}
+
+void
+Messenger::connect(Messenger::Connection& connection) {
+  MPI_Lookup_name(SERVER_NAME, MPI_INFO_NULL, &m_port[0]);
+
+  std::cout << "[i]" << std::endl; 
+  MPI_Comm_connect(
+      m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
+  std::cout << "[o]" << std::endl; 
+}
+
+void
+Messenger::disconnect(Messenger::Connection& connection) {
+  MPI_Comm_disconnect(&connection.connection);
 }

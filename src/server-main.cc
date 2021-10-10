@@ -1,5 +1,3 @@
-#include <mpi.h>
-
 #include "node.hh"
 #include "leader-election.hh"
 
@@ -9,12 +7,6 @@ main(int argc, char* argv[]) {
 
   node.init();
 
-  // TODO remove
-  if (node.isLeader() == true) {
-    node.replicateData("Hello World");
-  }
-
-  // TODO rename
   node.startMainLoops();
 
   node.destroy();

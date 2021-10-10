@@ -24,6 +24,11 @@
 ** TODO implement derived MessageHandler classes for each thread/tag
 ** TODO implement the MessageHandler class
 ** TODO move accept thread spawning in main to Node::create
+** TODO enforce restricting startReceiveLoop to only be called on ReceiverManag.
+** TODO implement probing blocking call in messenger
+** TODO make a thread safe function for adding communicator to clientReceivers
+** TODO implement logic for relinquishing leadership upon process recovery
+** TODO in leader election add call to enableClientCommunication
 * TODO client
 ** TODO implement random command generation
 ** TODO implement server communication

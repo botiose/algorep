@@ -17,7 +17,7 @@ enum class ReplCode { SHUTDOWN, START, SPEED, CRASH, RECOVER, SIZE };
 
 enum class FailDetectionCode { SHUTDOWN, SIZE };
 
-enum class ClientCode { SHUTDOWN, SIZE };
+enum class ClientCode { SHUTDOWN, CONNECT, DISCONNECT, SIZE };
 
 
 template <typename T>

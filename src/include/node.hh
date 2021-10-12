@@ -26,7 +26,7 @@ public:
   Node() = default;
 
   void
-  init();
+  init(int argc, char** argv);
 
   void
   destroy() const;

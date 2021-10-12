@@ -5,7 +5,7 @@ int
 main(int argc, char* argv[]) {
   Node node{};
 
-  node.init();
+  node.init(argc, argv);
 
   node.startMainLoops();
 

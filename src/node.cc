@@ -100,8 +100,8 @@ Node::isLeader() const {
 }
 
 void
-Node::init() {
-  m_messenger.start(m_nodeId, m_clusterSize);
+Node::init(int argc, char** argv) {
+  m_messenger.start(argc, argv, m_nodeId, m_clusterSize);
 
   m_leaderNodeId = m_clusterSize - 1;
 }

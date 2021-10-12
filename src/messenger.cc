@@ -130,9 +130,12 @@ Messenger::receiveWithTag(const MessageTag& messageTag,
 }
 
 void
-Messenger::start(int& rank, int& clusterSize) {
+Messenger::start(int argc,
+                 char** argv,
+                 int& rank,
+                 int& clusterSize) {
   int provided;
-  MPI_Init_thread(0, 0, MPI_THREAD_MULTIPLE, &provided);
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 
   if (provided < MPI_THREAD_MULTIPLE) {
     std::cerr << "messenger.cc: Multithreading not supported." << std::endl;
@@ -208,7 +211,11 @@ Messenger::selfConnect(Messenger::Connection& connection) const {
 
 void
 Messenger::connect(Messenger::Connection& connection) {
-  MPI_Lookup_name(SERVER_NAME, MPI_INFO_NULL, &m_port[0]);
+  MPI_Info scopeInfo;
+  MPI_Info_create(&scopeInfo);
+  MPI_Info_set(scopeInfo, "ompi_lookup_order", "global");
+
+  MPI_Lookup_name(SERVER_NAME, scopeInfo, &m_port[0]);
 
   std::cout << "[i]" << std::endl; 
   MPI_Comm_connect(

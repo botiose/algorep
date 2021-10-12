@@ -38,7 +38,7 @@ public:
    * @param[out] clusterSize number of processes in the cluster.
    */
   void
-  start(int& rank, int& clusterSize);
+  start(int argc, char** argv, int& rank, int& clusterSize);
 
   /**
    * @brief Stops the MPI API by calling MPI_Finalize().

@@ -7,7 +7,7 @@ public:
   Client() = default;
 
   void
-  connect();
+  connect(int argc, char** argv);
 
   void
   disconnect();

@@ -17,8 +17,14 @@ enum class ReplCode { SHUTDOWN, START, SPEED, CRASH, RECOVER, SIZE };
 
 enum class FailDetectionCode { SHUTDOWN, SIZE };
 
-enum class ClientCode { SHUTDOWN, CONNECT, DISCONNECT, SIZE };
-
+enum class ClientCode {
+  SHUTDOWN,
+  CONNECT,
+  DISCONNECT,
+  REPLICATE,
+  REPLICATED,
+  SIZE
+};
 
 template <typename T>
 MessageTag

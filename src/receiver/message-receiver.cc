@@ -16,6 +16,7 @@ MessageReceiver::startReceiveLoop() {
 
     m_messenger.receiveWithTagBlock(m_tag, srcNodeId, receivedMessage);
 
+    // message code 0 is SHUTDOWN for all message tags
     isUp = receivedMessage.getCodeInt() != 0;
 
     if (isUp == true) {

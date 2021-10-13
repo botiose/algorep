@@ -11,17 +11,12 @@
 
 void
 broadcastPrepare(const Messenger& messenger,
-                 const int& nodeId, // TODO remove
                  const int& clusterSize,
                  int& roundId) {
   Message prepare;
   messenger.setMessage(ConsensusCode::PREPARE, prepare);
 
   for (int i = 0; i < clusterSize; i++) {
-    if (i == nodeId) { // TODO remove
-      continue;
-    }
-
     messenger.send(i, prepare);
   }
 
@@ -79,7 +74,6 @@ receivePromises(const Messenger& messenger,
 
 void
 broadcastPropose(const Messenger& messenger,
-                 const int& nodeId, // TODO remove
                  const int& clusterSize,
                  const int& roundId,
                  const std::string& value,
@@ -94,10 +88,6 @@ broadcastPropose(const Messenger& messenger,
   messenger.setMessage(ConsensusCode::PROPOSE, proposeData, propose);
 
   for (int i = 0; i < clusterSize; i++) {
-    if (i == nodeId) { // TODO remove
-      continue;
-    }
-
     messenger.send(i, propose);
   }
 }
@@ -136,14 +126,12 @@ receiveAccepts(const Messenger& messenger,
 
 void
 ConsensusManager::startConsensus(const Messenger& messenger,
-                                 const int& nodeId, // TODO remove
-                                 const int& clusterSize,
                                  const std::string& value) {
+  int clusterSize = messenger.getClusterSize();
   bool majorityAccepted = false;
   while (majorityAccepted == false) {
     int roundId;
     broadcastPrepare(messenger,
-                     nodeId, // TODO remove
                      clusterSize,
                      roundId);
 
@@ -159,7 +147,6 @@ ConsensusManager::startConsensus(const Messenger& messenger,
 
     if (majorityPromised == true) {
       broadcastPropose(messenger,
-                       nodeId,
                        clusterSize,
                        roundId,
                        value,
@@ -170,6 +157,7 @@ ConsensusManager::startConsensus(const Messenger& messenger,
 
       if (majorityAccepted == true) {
         // TODO replicate
+        std::cout << "consensus reached" << std::endl; 
       }
     }
   }

@@ -17,21 +17,27 @@ acceptConnection(Messenger& messenger,
   bool isUp = true;
   while (isUp == true) {
     Messenger::Connection connection;
-    std::cout << "accepting" << std::endl; 
+    std::cout << "accepting" << std::endl;
     messenger.acceptConnection(connection);
-    std::cout << "connection accepted" << std::endl; 
+    std::cout << "connection accepted" << std::endl;
 
-    MessageTag tag;
-    messenger.probeTagBlock(connection, tag);
+    int srcNodeId;
+    Message message;
+    messenger.receiveBlock(srcNodeId, message, connection);
 
-    if (tag != MessageTag::REPL) {
-      clientReceiver->addConnection(connection);
-    } else {
-      int srcNodeId;
-      Message message;
-      messenger.receiveWithTagBlock(tag, srcNodeId, message, connection);
+    MessageTag tag = message.getTag();
 
+    switch (tag) {
+    case MessageTag::CLIENT: {
+      if (message.getCode<ClientCode>() == ClientCode::CONNECT) {
+        clientReceiver->addConnection(connection);
+      }
+      break;
+    }
+    case MessageTag::REPL: {
       isUp = message.getCode<ReplCode>() != ReplCode::SHUTDOWN;
+      break;
+    }
     }
   }
 
@@ -45,7 +51,7 @@ Node::enableClientCommunication() {
   m_receiverManager.startReceiver(clientReceiver);
 
   m_acceptConnThread =
-    std::thread(acceptConnection, std::ref(m_messenger), clientReceiver);
+      std::thread(acceptConnection, std::ref(m_messenger), clientReceiver);
 }
 
 void
@@ -77,21 +83,13 @@ Node::startMainLoops() {
 
   if (this->isLeader() == true) {
     this->enableClientCommunication();
-  }  
+  }
 
   m_receiverManager.waitForReceivers();
 
   if (this->isLeader() == true) {
     m_acceptConnThread.join();
   }
-}
-
-void
-Node::replicateData(const std::string& data) const {
-  ConsensusManager::startConsensus(m_messenger,
-                                   m_nodeId, // TODO remove
-                                   m_clusterSize,
-                                   data);
 }
 
 bool

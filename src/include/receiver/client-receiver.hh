@@ -10,8 +10,8 @@ class ClientReceiver : public MessageReceiver {
 public:
   ClientReceiver(const Messenger& messenger);
 
-  // void
-  // startReceiveLoop() final;
+  void
+  startReceiveLoop() final;
 
   void
   handleMessage(const int& srcNodeId, const Message& receivedMessage) final;
@@ -20,6 +20,9 @@ public:
   addConnection(Messenger::Connection connection);
 
 private:
+  void
+  receivePendingMessages(bool& isUp);
+
   std::mutex m_mutex;
 
   std::list<Messenger::Connection> m_clientConnections;

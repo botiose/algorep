@@ -26,9 +26,13 @@
 ** TODO move accept thread spawning in main to Node::create
 ** TODO enforce restricting startReceiveLoop to only be called on ReceiverManag.
 ** TODO implement probing blocking call in messenger
-** TODO make a thread safe function for adding communicator to clientReceivers
+** DONE make a thread safe function for adding communicator to clientReceivers
 ** TODO implement logic for relinquishing leadership upon process recovery
 ** TODO in leader election add call to enableClientCommunication
+* TODO messenger
+** TODO change blocking Send to non-blocking Isend
+** TODO change the 'cluster size' and rank getter to return the values
+** TODO improve visibility of the clusterSize in 'node' and 'messenger'
 * TODO client
 ** TODO implement random command generation
 ** TODO implement server communication

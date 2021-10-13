@@ -49,14 +49,6 @@ public:
   bool
   isLeader() const;
 
-  /**
-   * @brief replicates the given data along all nodes in the cluster.
-   *
-   * @param[in] data data to replicate.
-   */
-  void
-  replicateData(const std::string& data) const;
-
   void
   enableClientCommunication();
 

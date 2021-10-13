@@ -146,6 +146,7 @@ Messenger::start(int argc,
   rank = m_rank;
 
   MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
+  m_clusterSize = clusterSize;
 }
 
 void
@@ -217,13 +218,18 @@ Messenger::connect(Messenger::Connection& connection) {
 
   MPI_Lookup_name(SERVER_NAME, scopeInfo, &m_port[0]);
 
-  std::cout << "[i]" << std::endl; 
   MPI_Comm_connect(
       m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
-  std::cout << "[o]" << std::endl; 
+  std::cout << "connected" << std::endl; 
 }
 
 void
-Messenger::disconnect(Messenger::Connection& connection) {
+Messenger::disconnect(Messenger::Connection& connection) const {
+  std::cout << "disconnected" << std::endl; 
   MPI_Comm_disconnect(&connection.connection);
+}
+
+int
+Messenger::getClusterSize() const {
+  return m_clusterSize;
 }

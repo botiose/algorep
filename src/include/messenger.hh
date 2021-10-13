@@ -55,13 +55,8 @@ public:
   void
   getRank(int& rank) const;
 
-  /**
-   * @brief Gets the cluster size.
-   *
-   * @param[out] clusterSize number of processes in the cluster.
-   */
-  void
-  getClusterSize(int& clusterSize) const;
+  int
+  getClusterSize() const;
 
   /**
    * @brief Initializes the message with the given code.
@@ -173,13 +168,14 @@ public:
   connect(Connection& connection);
 
   void
-  disconnect(Connection& connection);
+  disconnect(Connection& connection) const;
 
 private:
   void
   generateUniqueId(const int& nodeId, int& id) const;
 
   int m_rank; /**< rank of the current process */
+  int m_clusterSize;
   bool m_isPublished = false;
   char m_port[MPI_MAX_PORT_NAME];
 };

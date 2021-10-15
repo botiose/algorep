@@ -15,17 +15,17 @@
 ** TODO cleanup code 
 ** TODO document
 * TODO server
-** TODO implement leader port publishing 
-** TODO implement accept thread
+** DONE implement leader port publishing 
+** DONE implement accept thread
 ** TODO implement failure detection heartbeat thread
 ** TODO implement election thread
 ** TODO implement consensus thread
 ** TODO implement REPL thread
-** TODO implement derived MessageHandler classes for each thread/tag
-** TODO implement the MessageHandler class
-** TODO move accept thread spawning in main to Node::create
+** DONE implement derived MessageHandler classes for each thread/tag
+** DONE implement the MessageHandler class
+** DONE move accept thread spawning in main to Node::create
 ** TODO enforce restricting startReceiveLoop to only be called on ReceiverManag.
-** TODO implement probing blocking call in messenger
+** DONE implement probing blocking call in messenger
 ** DONE make a thread safe function for adding communicator to clientReceivers
 ** TODO implement logic for relinquishing leadership upon process recovery
 ** TODO in leader election add call to enableClientCommunication

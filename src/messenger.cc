@@ -190,6 +190,7 @@ Messenger::acceptConnection(Messenger::Connection& connection) const {
 
   MPI_Comm_accept(
       m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
+  std::cout << "connection accepted" << std::endl;
 }
 
 void
@@ -232,4 +233,9 @@ Messenger::disconnect(Messenger::Connection& connection) const {
 int
 Messenger::getClusterSize() const {
   return m_clusterSize;
+}
+
+int
+Messenger::getRank() const {
+  return m_rank;
 }

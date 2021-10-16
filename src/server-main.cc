@@ -1,5 +1,4 @@
 #include "node.hh"
-#include "leader-election.hh"
 
 int
 main(int argc, char* argv[]) {

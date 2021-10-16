@@ -1,11 +1,9 @@
 #include <iostream>
 
 #include "node.hh"
-#include "leader-election.hh"
 #include "consensus-manager.hh"
 #include "repl-receiver.hh"
-#include "election-receiver.hh"
-#include "consensus-receiver.hh"
+#include "election-manager.hh"
 #include "fail-receiver.hh"
 #include "client-receiver.hh"
 
@@ -13,13 +11,11 @@ void
 acceptConnection(Messenger& messenger,
                  std::shared_ptr<ClientReceiver> clientReceiver) {
   messenger.publish();
-
+  std::cout << "accepting connections" << std::endl; 
   bool isUp = true;
   while (isUp == true) {
     Messenger::Connection connection;
-    std::cout << "accepting" << std::endl;
     messenger.acceptConnection(connection);
-    std::cout << "connection accepted" << std::endl;
 
     int srcNodeId;
     Message message;
@@ -69,17 +65,17 @@ void
 Node::startMainLoops() {
   std::shared_ptr<ReplReceiver> replReceiver =
       std::make_shared<ReplReceiver>(m_messenger);
-  std::shared_ptr<ElectionReceiver> electionReceiver =
-      std::make_shared<ElectionReceiver>(m_messenger);
-  std::shared_ptr<ConsensusReceiver> consensusReceiver =
-      std::make_shared<ConsensusReceiver>(m_messenger);
+  std::shared_ptr<ElectionManager> electionManager =
+      std::make_shared<ElectionManager>(m_messenger);
+  std::shared_ptr<ConsensusManager> consensusManager =
+      std::make_shared<ConsensusManager>(m_messenger);
   std::shared_ptr<FailReceiver> failReceiver =
       std::make_shared<FailReceiver>(m_messenger);
 
-  m_receiverManager.startReceiver(replReceiver);
-  m_receiverManager.startReceiver(electionReceiver);
-  m_receiverManager.startReceiver(consensusReceiver);
-  m_receiverManager.startReceiver(failReceiver);
+  // m_receiverManager.startReceiver(replReceiver);
+  // m_receiverManager.startReceiver(electionManager);
+  m_receiverManager.startReceiver(consensusManager);
+  // m_receiverManager.startReceiver(failReceiver);
 
   if (this->isLeader() == true) {
     this->enableClientCommunication();

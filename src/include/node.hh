@@ -59,7 +59,6 @@ private:
   ReceiverManager m_receiverManager;
 
   Messenger m_messenger;               /**< local messenger instance */
-  ConsensusManager m_consensusManager; /**< manager for consensus logic */
 
   int m_nodeId;       /**< id of the current node */
   int m_clusterSize;  /**< number of nodes in the cluster */

@@ -11,7 +11,15 @@ enum class MessageTag {
 
 enum class LeaderElectionCode { SHUTDOWN, ELECTION, ALIVE, VICTORY, SIZE };
 
-enum class ConsensusCode { SHUTDOWN, PREPARE, PROMISE, PROPOSE, ACCEPT, SIZE };
+enum class ConsensusCode {
+  SHUTDOWN,
+  PREPARE,
+  PROMISE,
+  PROPOSE,
+  ACCEPT,
+  ACCEPTED,
+  SIZE
+};
 
 enum class ReplCode { SHUTDOWN, START, SPEED, CRASH, RECOVER, SIZE };
 
@@ -22,7 +30,7 @@ enum class ClientCode {
   CONNECT,
   DISCONNECT,
   REPLICATE,
-  REPLICATED,
+  SUCCESS,
   SIZE
 };
 

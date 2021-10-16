@@ -52,8 +52,8 @@ public:
    *
    * @param[out] rank rank of the process.
    */
-  void
-  getRank(int& rank) const;
+  int
+  getRank() const;
 
   int
   getClusterSize() const;

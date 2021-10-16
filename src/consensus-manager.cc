@@ -6,8 +6,12 @@
 
 #include "consensus-manager.hh"
 
-#define PROMISE_WAIT_DURATION 10
-#define ACCEPT_WAIT_DURATION 10
+#define PROMISE_WAIT_DURATION 3
+#define ACCEPT_WAIT_DURATION 5
+
+ConsensusManager::ConsensusManager(const Messenger& messenger) :
+  MessageReceiver(messenger, MessageTag::CONSENSUS) {
+}
 
 void
 broadcastPrepare(const Messenger& messenger,
@@ -125,15 +129,31 @@ receiveAccepts(const Messenger& messenger,
 }
 
 void
+broadcastAccepted(const Messenger& messenger,
+                  const int& clusterSize,
+                  const int& roundId,
+                  const std::string& value) {
+  nlohmann::json acceptedDataJson = {{"roundId", roundId},
+                                    {"value", value}};
+  const std::string& acceptedData = acceptedDataJson.dump();
+  Message accepted;
+  messenger.setMessage(ConsensusCode::ACCEPTED, acceptedData, accepted);
+
+  for (int i = 0; i < clusterSize; i++) {
+    messenger.send(i, accepted);
+  }
+}
+
+void
 ConsensusManager::startConsensus(const Messenger& messenger,
-                                 const std::string& value) {
+                                 const std::string& value,
+                                 bool& consensusReached) {
+  consensusReached = false;
   int clusterSize = messenger.getClusterSize();
   bool majorityAccepted = false;
   while (majorityAccepted == false) {
     int roundId;
-    broadcastPrepare(messenger,
-                     clusterSize,
-                     roundId);
+    broadcastPrepare(messenger, clusterSize, roundId);
 
     bool majorityPromised;
     int maxAcceptedId;
@@ -146,18 +166,17 @@ ConsensusManager::startConsensus(const Messenger& messenger,
                     acceptedValue);
 
     if (majorityPromised == true) {
-      broadcastPropose(messenger,
-                       clusterSize,
-                       roundId,
-                       value,
-                       maxAcceptedId,
-                       acceptedValue);
+      broadcastPropose(
+          messenger, clusterSize, roundId, value, maxAcceptedId, acceptedValue);
 
       receiveAccepts(messenger, clusterSize, roundId, majorityAccepted);
 
       if (majorityAccepted == true) {
-        // TODO replicate
+
         std::cout << "consensus reached" << std::endl; 
+        // TODO broadcastAccepted();
+
+        consensusReached = true;
       }
     }
   }
@@ -217,24 +236,34 @@ handleProposeMessage(const Messenger& messenger,
 
     messenger.send(srcNodeId, accept);
 
-    context = ConsensusManager::ConsensusContext();
+    context = ConsensusManager::ConsensusContext{};
   }
 }
 
 void
-ConsensusManager::handleConsensusMessage(const Messenger& messenger,
-                                         const int& clusterSize,
-                                         const int& srcNodeId,
-                                         const Message& receivedMessage) {
+handleAcceptedMessage() {
+  // TODO log value
+}
+
+void
+ConsensusManager::handleMessage(const int& srcNodeId,
+                                const Message& receivedMessage,
+                                const Messenger::Connection& connection) {
+  int clusterSize = m_messenger.getClusterSize();
   ConsensusCode code = receivedMessage.getCode<ConsensusCode>();
   int id = receivedMessage.getId();
   switch (code) {
   case ConsensusCode::PREPARE: {
-    handlePrepareMessage(messenger, srcNodeId, id, m_context);
+    handlePrepareMessage(m_messenger, srcNodeId, id, m_context);
     break;
   }
   case ConsensusCode::PROPOSE: {
-    handleProposeMessage(messenger, srcNodeId, receivedMessage, id, m_context);
+    handleProposeMessage(
+        m_messenger, srcNodeId, receivedMessage, id, m_context);
+    break;
+  }
+  case ConsensusCode::ACCEPTED: {
+    handleAcceptedMessage();
     break;
   }
   }

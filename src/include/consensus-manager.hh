@@ -13,9 +13,11 @@
 #include <string>
 
 #include "messenger.hh"
+#include "message-receiver.hh"
 
-class ConsensusManager {
+class ConsensusManager : public MessageReceiver {
 public:
+  ConsensusManager(const Messenger& messenger);
   /**
    * @brief Start on consensus for the given value.
    *
@@ -32,7 +34,8 @@ public:
    */
   static void
   startConsensus(const Messenger& messenger,
-                 const std::string& value);
+                 const std::string& value, 
+                 bool& consensusReached);
 
   /**
    * @brief Handles consensus related messages.
@@ -48,10 +51,9 @@ public:
    * @param[in] receivedMessage
    */
   void
-  handleConsensusMessage(const Messenger& messenger,
-                         const int& clusterSize,
-                         const int& srcNodeId,
-                         const Message& receivedMessage);
+  handleMessage(const int& srcNodeId,
+                const Message& receivedMessage,
+                const Messenger::Connection& connection) final;
 
   struct ConsensusContext {
     /**

@@ -12,7 +12,9 @@ public:
   startReceiveLoop();
 
   virtual void
-  handleMessage(const int& srcNodeId, const Message& receivedMessage) = 0;
+  handleMessage(const int& srcNodeId,
+                const Message& receivedMessage,
+                const Messenger::Connection& connection = {MPI_COMM_WORLD}) = 0;
 
 protected:
   const Messenger& m_messenger;

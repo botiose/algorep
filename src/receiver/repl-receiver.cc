@@ -8,5 +8,6 @@ ReplReceiver::ReplReceiver(const Messenger& messenger)
 
 void
 ReplReceiver::handleMessage(const int& srcNodeId,
-                            const Message& receivedMessage) {
+                            const Message& receivedMessage,
+                            const Messenger::Connection& connection) {
 }

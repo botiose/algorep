@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 
+#include <json.hpp>
+
 #include "client-receiver.hh"
 #include "consensus-manager.hh"
 
@@ -12,14 +14,26 @@ ClientReceiver::ClientReceiver(const Messenger& messenger)
 
 void
 ClientReceiver::handleMessage(const int& srcNodeId,
-                              const Message& receivedMessage) {
+                              const Message& receivedMessage,
+                              const Messenger::Connection& connection) {
   ClientCode code = receivedMessage.getCode<ClientCode>();
-
   switch(code) {
   case ClientCode::REPLICATE: {
     const std::string& data = receivedMessage.getData();
 
-    ConsensusManager::startConsensus(m_messenger, data);
+    nlohmann::json dataJson = nlohmann::json::parse(data);
+    std::string value;
+    dataJson.at("value").get_to(value);
+
+    bool consensusReached;
+    ConsensusManager::startConsensus(m_messenger, value, consensusReached);
+    
+    if(consensusReached == true) {
+      Message message;
+      m_messenger.setMessage(ClientCode::SUCCESS, message);
+      m_messenger.send(srcNodeId, message, connection);
+    }
+
     break;
   }
   }
@@ -44,15 +58,17 @@ ClientReceiver::receivePendingMessages(bool& isUp) {
                                receivedMessage,
                                *connection);
 
-    // message code 0 is SHUTDOWN for all message tags
-    isUp = receivedMessage.getCodeInt() != 0;
+    if (messageReceived == true) {
+      // message code 0 is SHUTDOWN for all message tags
+      isUp = receivedMessage.getCodeInt() != 0;
 
-    if (isUp == true && messageReceived == true) {
-      if (receivedMessage.getCode<ClientCode>() != ClientCode::DISCONNECT) {
-        this->handleMessage(srcNodeId, receivedMessage);
-      } else {
-        m_messenger.disconnect(*connection);
-        connection = m_clientConnections.erase(connection);
+      if (isUp == true) {
+        if (receivedMessage.getCode<ClientCode>() != ClientCode::DISCONNECT) {
+          this->handleMessage(srcNodeId, receivedMessage, *connection);
+        } else {
+          m_messenger.disconnect(*connection);
+          connection = m_clientConnections.erase(connection);
+        }
       }
     }
 
@@ -66,7 +82,7 @@ ClientReceiver::startReceiveLoop() {
   bool isUp = true;
   while (isUp == true) {
     this->receivePendingMessages(isUp);
-
+    
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
   }
 }

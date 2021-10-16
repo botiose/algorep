@@ -8,5 +8,7 @@ public:
   FailReceiver(const Messenger& messenger);
 
   void
-  handleMessage(const int& srcNodeId, const Message& receivedMessage) final;
+  handleMessage(const int& srcNodeId,
+                const Message& receivedMessage,
+                const Messenger::Connection& connection) final;
 };

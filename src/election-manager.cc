@@ -1,12 +1,12 @@
+#include <iostream>
 #include <chrono>
 
-#include "leader-election.hh"
+#include "election-manager.hh"
 #include "message-info.hh"
 
 #define ELECTION_WAIT_DURATION 5
 #define VICTORY_WAIT_DURATION 60
 
-namespace leader_election {
 void
 declareVictory(const Messenger& messenger,
                const int& nodeId,
@@ -126,13 +126,17 @@ startElection(const Messenger& messenger,
   leaderNodeId = victorNodeId;
 }
 
+ElectionManager::ElectionManager(const Messenger& messenger)
+    : MessageReceiver(messenger, MessageTag::LEADER_ELECTION) {
+}
+
 void
-handleElectionMessage(const Messenger& messenger,
-                      const int& nodeId,
-                      const int& clusterSize,
-                      const int& srcNodeId,
-                      const Message& receivedMessage,
-                      int& leaderNodeId) {
+ElectionManager::handleMessage(const int& srcNodeId,
+                               const Message& receivedMessage,
+                               const Messenger::Connection& connection) {
+  std::cout << "election manager: listening" << std::endl;
+  int nodeId = m_messenger.getRank();
+  int clusterSize = m_messenger.getClusterSize();
   LeaderElectionCode bullyCode = receivedMessage.getCode<LeaderElectionCode>();
   switch (bullyCode) {
   case LeaderElectionCode::ELECTION: {
@@ -142,19 +146,17 @@ handleElectionMessage(const Messenger& messenger,
     // higher-numbered processes.
     Message activeMessage;
 
-    messenger.setMessage(LeaderElectionCode::ALIVE, activeMessage);
-    messenger.send(srcNodeId, activeMessage);
+    m_messenger.setMessage(LeaderElectionCode::ALIVE, activeMessage);
+    m_messenger.send(srcNodeId, activeMessage);
 
     if (srcNodeId < nodeId) {
-      leader_election::startElection(
-          messenger, nodeId, clusterSize, leaderNodeId);
+      startElection(m_messenger, nodeId, clusterSize, m_leaderNodeId);
     }
     break;
   }
   case LeaderElectionCode::VICTORY: {
-    leaderNodeId = srcNodeId;
+    m_leaderNodeId = srcNodeId;
     break;
   }
   }
 }
-} // namespace leader_election

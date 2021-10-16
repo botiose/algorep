@@ -9,7 +9,7 @@ main(int argc, char* argv[]) {
 
   client.connect(argc, argv);
 
-  client.sendData("Hello World");
+  client.replicate("Hello World");
 
   client.disconnect();
 

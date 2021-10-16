@@ -10,7 +10,7 @@ public:
   connect(int argc, char** argv);
 
   void
-  sendData(const std::string& data) const;
+  replicate(const std::string& data) const;
 
   void
   disconnect();

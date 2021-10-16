@@ -4,7 +4,7 @@ enum class MessageTag {
   LEADER_ELECTION,
   CONSENSUS,
   REPL,
-  FAIL_DETECTION,
+  FAILURE_DETECTION,
   CLIENT,
   SIZE
 };

@@ -2,14 +2,14 @@
 
 #include "node.hh"
 #include "consensus-manager.hh"
-#include "repl-receiver.hh"
+#include "repl-manager.hh"
 #include "election-manager.hh"
-#include "fail-receiver.hh"
-#include "client-receiver.hh"
+#include "failure-manager.hh"
+#include "client-manager.hh"
 
 void
 acceptConnection(Messenger& messenger,
-                 std::shared_ptr<ClientReceiver> clientReceiver) {
+                 std::shared_ptr<ClientManager> clientManager) {
   messenger.publish();
   std::cout << "accepting connections" << std::endl; 
   bool isUp = true;
@@ -26,7 +26,7 @@ acceptConnection(Messenger& messenger,
     switch (tag) {
     case MessageTag::CLIENT: {
       if (message.getCode<ClientCode>() == ClientCode::CONNECT) {
-        clientReceiver->addConnection(connection);
+        clientManager->addConnection(connection);
       }
       break;
     }
@@ -42,12 +42,12 @@ acceptConnection(Messenger& messenger,
 
 void
 Node::enableClientCommunication() {
-  std::shared_ptr<ClientReceiver> clientReceiver =
-      std::make_shared<ClientReceiver>(m_messenger);
-  m_receiverManager.startReceiver(clientReceiver);
+  std::shared_ptr<ClientManager> clientManager =
+      std::make_shared<ClientManager>(m_messenger);
+  m_receiverManager.startReceiver(clientManager);
 
   m_acceptConnThread =
-      std::thread(acceptConnection, std::ref(m_messenger), clientReceiver);
+      std::thread(acceptConnection, std::ref(m_messenger), clientManager);
 }
 
 void
@@ -63,19 +63,19 @@ Node::disableClientCommunication() {
 
 void
 Node::startMainLoops() {
-  std::shared_ptr<ReplReceiver> replReceiver =
-      std::make_shared<ReplReceiver>(m_messenger);
+  std::shared_ptr<ReplManager> replManager =
+      std::make_shared<ReplManager>(m_messenger);
   std::shared_ptr<ElectionManager> electionManager =
       std::make_shared<ElectionManager>(m_messenger);
   std::shared_ptr<ConsensusManager> consensusManager =
       std::make_shared<ConsensusManager>(m_messenger);
-  std::shared_ptr<FailReceiver> failReceiver =
-      std::make_shared<FailReceiver>(m_messenger);
+  std::shared_ptr<FailureManager> failureManager =
+      std::make_shared<FailureManager>(m_messenger);
 
-  // m_receiverManager.startReceiver(replReceiver);
+  // m_receiverManager.startReceiver(replManager);
   // m_receiverManager.startReceiver(electionManager);
   m_receiverManager.startReceiver(consensusManager);
-  // m_receiverManager.startReceiver(failReceiver);
+  // m_receiverManager.startReceiver(failureManager);
 
   if (this->isLeader() == true) {
     this->enableClientCommunication();

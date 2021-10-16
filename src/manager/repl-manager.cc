@@ -1,13 +1,13 @@
 #include <iostream>
 
-#include "repl-receiver.hh"
+#include "repl-manager.hh"
 
-ReplReceiver::ReplReceiver(const Messenger& messenger)
+ReplManager::ReplManager(const Messenger& messenger)
     : MessageReceiver(messenger, MessageTag::REPL) {
 }
 
 void
-ReplReceiver::handleMessage(const int& srcNodeId,
+ReplManager::handleMessage(const int& srcNodeId,
                             const Message& receivedMessage,
                             const Messenger::Connection& connection) {
 }

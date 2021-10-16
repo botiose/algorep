@@ -6,9 +6,9 @@
 #include "message-receiver.hh"
 #include "messenger.hh"
 
-class ClientReceiver : public MessageReceiver {
+class ClientManager : public MessageReceiver {
 public:
-  ClientReceiver(const Messenger& messenger);
+  ClientManager(const Messenger& messenger);
 
   void
   startReceiveLoop() final;

@@ -21,7 +21,7 @@ getTagFromCode<ReplCode>() {
 template <>
 MessageTag
 getTagFromCode<FailDetectionCode>() {
-  return MessageTag::FAIL_DETECTION;
+  return MessageTag::FAILURE_DETECTION;
 }
 
 template <>

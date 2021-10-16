@@ -12,13 +12,13 @@ set(SERVER_SRC
   src/messenger.cc
   src/message.cc
   src/message-info.cc
-  src/consensus-manager.cc
-  src/receiver/message-receiver.cc
-  src/receiver/receiver-manager.cc
-  src/receiver/repl-receiver.cc
-  src/election-manager.cc
-  src/receiver/fail-receiver.cc
-  src/receiver/client-receiver.cc
+  src/message-receiver.cc
+  src/receiver-manager.cc
+  src/manager/consensus-manager.cc
+  src/manager/election-manager.cc
+  src/manager/client-manager.cc
+  src/manager/failure-manager.cc
+  src/manager/repl-manager.cc
   )
 
 set(CLIENT_SRC
@@ -46,7 +46,7 @@ add_executable(client
 set(COMMON_INCLUDES
   "${PROJECT_SOURCE_DIR}/extern/json"
   "${PROJECT_SOURCE_DIR}/src/include"
-  "${PROJECT_SOURCE_DIR}/src/include/receiver"
+  "${PROJECT_SOURCE_DIR}/src/include/manager"
   )
 
 target_include_directories(client PUBLIC

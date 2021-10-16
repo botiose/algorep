@@ -3,17 +3,17 @@
 
 #include <json.hpp>
 
-#include "client-receiver.hh"
+#include "client-manager.hh"
 #include "consensus-manager.hh"
 
 #define LOOP_SLEEP_DURATION 50
 
-ClientReceiver::ClientReceiver(const Messenger& messenger)
+ClientManager::ClientManager(const Messenger& messenger)
     : MessageReceiver(messenger, MessageTag::CLIENT) {
 }
 
 void
-ClientReceiver::handleMessage(const int& srcNodeId,
+ClientManager::handleMessage(const int& srcNodeId,
                               const Message& receivedMessage,
                               const Messenger::Connection& connection) {
   ClientCode code = receivedMessage.getCode<ClientCode>();
@@ -40,7 +40,7 @@ ClientReceiver::handleMessage(const int& srcNodeId,
 }
 
 void
-ClientReceiver::receivePendingMessages(bool& isUp) {
+ClientManager::receivePendingMessages(bool& isUp) {
   std::unique_lock<std::mutex> lock(m_mutex);
 
   int i = 0;
@@ -78,7 +78,7 @@ ClientReceiver::receivePendingMessages(bool& isUp) {
 }
 
 void
-ClientReceiver::startReceiveLoop() {
+ClientManager::startReceiveLoop() {
   bool isUp = true;
   while (isUp == true) {
     this->receivePendingMessages(isUp);
@@ -88,7 +88,7 @@ ClientReceiver::startReceiveLoop() {
 }
 
 void
-ClientReceiver::addConnection(Messenger::Connection connection) {
+ClientManager::addConnection(Messenger::Connection connection) {
   std::unique_lock<std::mutex> lock(m_mutex);
 
   m_clientConnections.push_back(connection);

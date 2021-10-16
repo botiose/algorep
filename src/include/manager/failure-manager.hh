@@ -3,9 +3,9 @@
 #include "message-receiver.hh"
 #include "messenger.hh"
 
-class ReplReceiver : public MessageReceiver {
+class FailureManager : public MessageReceiver {
 public:
-  ReplReceiver(const Messenger& messenger);
+  FailureManager(const Messenger& messenger);
 
   void
   handleMessage(const int& srcNodeId,

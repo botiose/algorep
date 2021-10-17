@@ -47,6 +47,7 @@ ClientManager::receivePendingMessages(bool& isUp) {
 
   auto connection = m_clientConnections.begin();
 
+  // iterate over every client connection
   while (isUp == true && connection != m_clientConnections.end()) {
     int srcNodeId;
     Message receivedMessage;

@@ -72,7 +72,7 @@ Node::startMainLoops() {
   std::shared_ptr<FailureManager> failureManager =
       std::make_shared<FailureManager>(m_messenger);
 
-  // m_receiverManager.startReceiver(replManager);
+  m_receiverManager.startReceiver(replManager);
   // m_receiverManager.startReceiver(electionManager);
   m_receiverManager.startReceiver(consensusManager);
   // m_receiverManager.startReceiver(failureManager);

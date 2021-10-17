@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+
 enum class MessageTag {
   LEADER_ELECTION,
   CONSENSUS,
@@ -21,8 +24,6 @@ enum class ConsensusCode {
   SIZE
 };
 
-enum class ReplCode { SHUTDOWN, START, SPEED, CRASH, RECOVER, SIZE };
-
 enum class FailDetectionCode { SHUTDOWN, SIZE };
 
 enum class ClientCode {
@@ -33,6 +34,26 @@ enum class ClientCode {
   SUCCESS,
   SIZE
 };
+
+enum class ReplCode {
+  SHUTDOWN,
+  START,
+  SPEED_LOW,
+  SPEED_MEDIUM,
+  SPEED_HIGH,
+  CRASH,
+  RECOVER,
+  SIZE
+};
+
+static std::unordered_map<std::string, ReplCode> const replParseMap = {
+    {"shutdown", ReplCode::SHUTDOWN},
+    {"start", ReplCode::START},
+    {"speed-low", ReplCode::SPEED_LOW},
+    {"speed-medium", ReplCode::SPEED_MEDIUM},
+    {"speed-high", ReplCode::SPEED_HIGH},
+    {"speed-crash", ReplCode::CRASH},
+    {"speed-recover", ReplCode::RECOVER}};
 
 template <typename T>
 MessageTag

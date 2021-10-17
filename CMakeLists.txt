@@ -67,12 +67,22 @@ add_custom_target(crosscompile-server
   COMMAND ./../../etc/script/cross-compile.sh server
   )
 
+add_custom_target(etc-link
+  [ ! -d etc ] && ln -s ${PROJECT_SOURCE_DIR}/etc ${PROJECT_BINARY_DIR}/etc ||
+  exit 0
+  )
+
+add_custom_target(clear-repl
+  > etc/repl-msg.txt
+  DEPENDS etc-link
+  )
+
 # CLIENT RUN TARGET
 add_custom_target(run-client
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-clients.sh
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS client crosscompile-client
+  DEPENDS client crosscompile-client etc-link clear-repl
   )
 
 # SERVER RUN TARGET
@@ -80,7 +90,7 @@ add_custom_target(run-server
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-server.sh
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS server crosscompile-server
+  DEPENDS server crosscompile-server etc-link clear-repl
   )
 
 add_subdirectory(test EXCLUDE_FROM_ALL)

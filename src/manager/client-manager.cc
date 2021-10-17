@@ -8,8 +8,9 @@
 
 #define LOOP_SLEEP_DURATION 50
 
-ClientManager::ClientManager(const Messenger& messenger)
-    : MessageReceiver(messenger, MessageTag::CLIENT) {
+ClientManager::ClientManager(const Messenger& messenger,
+                             std::shared_ptr<ReplManager> replManager)
+  : MessageReceiver(messenger, MessageTag::CLIENT), m_replManager(replManager) {
 }
 
 void

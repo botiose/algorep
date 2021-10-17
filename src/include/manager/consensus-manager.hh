@@ -14,10 +14,12 @@
 
 #include "messenger.hh"
 #include "message-receiver.hh"
+#include "repl-manager.hh"
 
 class ConsensusManager : public MessageReceiver {
 public:
-  ConsensusManager(const Messenger& messenger);
+  ConsensusManager(const Messenger& messenger,
+                   std::shared_ptr<ReplManager> replManager);
   /**
    * @brief Start on consensus for the given value.
    *
@@ -71,5 +73,7 @@ public:
   };
 
 private:
+  std::shared_ptr<ReplManager> m_replManager;
+
   ConsensusContext m_context; /**< current round state/context */
 };

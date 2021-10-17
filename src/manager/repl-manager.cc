@@ -19,7 +19,36 @@ void
 ReplManager::handleMessage(const int& srcNodeId,
                            const Message& receivedMessage,
                            const Messenger::Connection& connection) {
-  // TODO 
+  std::unique_lock<std::mutex> lock(m_mutex);
+
+  ReplCode code = receivedMessage.getCode<ReplCode>();
+
+  switch (code) {
+  case ReplCode::START: {
+    m_hasStarted = true;
+    break;
+  }
+  case ReplCode::SPEED_LOW: {
+    m_speed = ReplCode::SPEED_LOW;
+    break;
+  }
+  case ReplCode::SPEED_MEDIUM: {
+    m_speed = ReplCode::SPEED_MEDIUM;
+    break;
+  }
+  case ReplCode::SPEED_HIGH: {
+    m_speed = ReplCode::SPEED_HIGH;
+    break;
+  }
+  case ReplCode::CRASH: {
+    m_hasCrashed = true;
+    break;
+  }
+  case ReplCode::RECOVER: {
+    m_hasCrashed = false;
+    break;
+  }
+  }
 }
 
 void
@@ -95,4 +124,25 @@ ReplManager::startReceiveLoop() {
   }
 
   ifs.close();
+}
+
+bool
+ReplManager::hasStarted() {
+  std::unique_lock<std::mutex> lock(m_mutex);
+
+  return m_hasStarted;
+}
+
+bool
+ReplManager::hasCrashed() {
+  std::unique_lock<std::mutex> lock(m_mutex);
+
+  return m_hasCrashed;
+}
+
+ReplCode
+ReplManager::getSpeed() {
+  std::unique_lock<std::mutex> lock(m_mutex);
+
+  return m_speed;
 }

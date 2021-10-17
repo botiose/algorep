@@ -126,8 +126,8 @@ startElection(const Messenger& messenger,
   leaderNodeId = victorNodeId;
 }
 
-ElectionManager::ElectionManager(const Messenger& messenger)
-    : MessageReceiver(messenger, MessageTag::LEADER_ELECTION) {
+ElectionManager::ElectionManager(const Messenger& messenger,   std::shared_ptr<ReplManager> replManager)
+  : MessageReceiver(messenger, MessageTag::LEADER_ELECTION), m_replManager(replManager) {
 }
 
 void

@@ -58,6 +58,8 @@ public:
 private:
   ReceiverManager m_receiverManager;
 
+  std::shared_ptr<ReplManager> m_replManager;
+
   Messenger m_messenger;               /**< local messenger instance */
 
   int m_nodeId;       /**< id of the current node */

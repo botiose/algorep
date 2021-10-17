@@ -2,10 +2,12 @@
 
 #include "message-receiver.hh"
 #include "messenger.hh"
+#include "repl-manager.hh"
 
 class ElectionManager : public MessageReceiver {
 public:
-  ElectionManager(const Messenger& messenger);
+  ElectionManager(const Messenger& messenger,
+                  std::shared_ptr<ReplManager> replManager);
 
   /**
    * @brief Handles messages tagged for leader election.
@@ -27,5 +29,7 @@ public:
                 const Messenger::Connection& connection);
 
 private:
+  std::shared_ptr<ReplManager> m_replManager;
+
   int m_leaderNodeId;
 };

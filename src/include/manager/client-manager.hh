@@ -5,10 +5,12 @@
 
 #include "message-receiver.hh"
 #include "messenger.hh"
+#include "repl-manager.hh"
 
 class ClientManager : public MessageReceiver {
 public:
-  ClientManager(const Messenger& messenger);
+  ClientManager(const Messenger& messenger,
+                std::shared_ptr<ReplManager> replManager);
 
   void
   startReceiveLoop() final;
@@ -24,6 +26,8 @@ public:
 private:
   void
   receivePendingMessages(bool& isUp);
+
+  std::shared_ptr<ReplManager> m_replManager;
 
   std::mutex m_mutex;
 

@@ -2,8 +2,10 @@
 
 #include "failure-manager.hh"
 
-FailureManager::FailureManager(const Messenger& messenger)
-    : MessageReceiver(messenger, MessageTag::FAILURE_DETECTION) {
+FailureManager::FailureManager(const Messenger& messenger,
+                               std::shared_ptr<ReplManager> replManager)
+    : MessageReceiver(messenger, MessageTag::FAILURE_DETECTION),
+      m_replManager(replManager) {
 }
 
 void

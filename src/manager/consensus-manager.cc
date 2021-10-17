@@ -9,8 +9,10 @@
 #define PROMISE_WAIT_DURATION 3
 #define ACCEPT_WAIT_DURATION 5
 
-ConsensusManager::ConsensusManager(const Messenger& messenger) :
-  MessageReceiver(messenger, MessageTag::CONSENSUS) {
+ConsensusManager::ConsensusManager(const Messenger& messenger,
+                                   std::shared_ptr<ReplManager> replManager)
+    : MessageReceiver(messenger, MessageTag::CONSENSUS),
+      m_replManager(replManager) {
 }
 
 void

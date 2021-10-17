@@ -11,7 +11,7 @@ void
 acceptConnection(Messenger& messenger,
                  std::shared_ptr<ClientManager> clientManager) {
   messenger.publish();
-  std::cout << "accepting connections" << std::endl; 
+  std::cout << "accepting connections" << std::endl;
   bool isUp = true;
   while (isUp == true) {
     Messenger::Connection connection;
@@ -43,7 +43,8 @@ acceptConnection(Messenger& messenger,
 void
 Node::enableClientCommunication() {
   std::shared_ptr<ClientManager> clientManager =
-      std::make_shared<ClientManager>(m_messenger);
+      std::make_shared<ClientManager>(m_messenger, m_replManager);
+
   m_receiverManager.startReceiver(clientManager);
 
   m_acceptConnThread =
@@ -59,20 +60,24 @@ Node::disableClientCommunication() {
   Message message;
   m_messenger.setMessage(ReplCode::SHUTDOWN, message);
   m_messenger.send(dstNodeId, message, connection);
+
+  // TODO remove the client manager and related thread obj from the receiver
+  // manager
 }
 
 void
 Node::startMainLoops() {
-  std::shared_ptr<ReplManager> replManager =
-      std::make_shared<ReplManager>(m_messenger);
-  std::shared_ptr<ElectionManager> electionManager =
-      std::make_shared<ElectionManager>(m_messenger);
-  std::shared_ptr<ConsensusManager> consensusManager =
-      std::make_shared<ConsensusManager>(m_messenger);
-  std::shared_ptr<FailureManager> failureManager =
-      std::make_shared<FailureManager>(m_messenger);
+  m_replManager = std::make_shared<ReplManager>(m_messenger);
 
-  m_receiverManager.startReceiver(replManager);
+  std::shared_ptr<ElectionManager> electionManager =
+      std::make_shared<ElectionManager>(m_messenger, m_replManager);
+  std::shared_ptr<ConsensusManager> consensusManager =
+      std::make_shared<ConsensusManager>(m_messenger, m_replManager);
+  std::shared_ptr<FailureManager> failureManager =
+      std::make_shared<FailureManager>(m_messenger, m_replManager);
+
+  m_receiverManager.startReceiver(m_replManager);
+
   // m_receiverManager.startReceiver(electionManager);
   m_receiverManager.startReceiver(consensusManager);
   // m_receiverManager.startReceiver(failureManager);

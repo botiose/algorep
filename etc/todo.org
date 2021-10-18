@@ -18,7 +18,7 @@
 ** DONE implement leader port publishing 
 ** DONE implement accept thread
 ** TODO implement failure detection heartbeat thread
-** TODO implement election thread
+** DONE implement election thread
 ** DONE implement consensus thread
 ** DONE implement REPL thread
 ** DONE implement derived MessageHandler classes for each thread/tag
@@ -29,14 +29,14 @@
 ** DONE make a thread safe function for adding communicator to clientReceivers
 ** TODO implement logic for relinquishing leadership upon process recovery
 ** TODO in leader election add call to enableClientCommunication
-** TODO start a leader election instead of setting the leader upon startup
+** DONE start a leader election instead of setting the leader upon startup
 * TODO messenger
 ** TODO change blocking Send to non-blocking Isend
-** TODO change the 'cluster size' and rank getter to return the values
+** DONE change the 'cluster size' and rank getter to return the values
 ** TODO improve visibility of the clusterSize in 'node' and 'messenger'
 * TODO client
 ** TODO implement random command generation
-** TODO implement server communication
+** DONE implement server communication
 ** TODO have an repl-msg file for each client and specify their ids through args
 * TODO doc
 ** TODO why repl messaging is done through a file

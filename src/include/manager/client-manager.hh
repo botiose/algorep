@@ -23,8 +23,8 @@ public:
   void
   addConnection(Messenger::Connection connection);
 
-  void
-  stopReceiveLoop();
+  // void
+  // stopReceiveLoop();
 
 private:
   bool m_isUp = true;

@@ -25,17 +25,12 @@ acceptConnection(Messenger& messenger,
 
     MessageTag tag = message.getTag();
 
-    switch (tag) {
-    case MessageTag::CLIENT: {
-      if (message.getCode<ClientCode>() == ClientCode::CONNECT) {
-        clientManager->addConnection(connection);
-      }
-      break;
-    }
-    case MessageTag::REPL: {
+    clientManager->addConnection(connection);
+
+    messenger.send(messenger.getRank(), message);
+
+    if (tag == MessageTag::REPL) {
       isUp = message.getCode<ReplCode>() != ReplCode::SHUTDOWN;
-      break;
-    }
     }
   }
 
@@ -61,8 +56,6 @@ Node::disableClientCommunication() {
   Message message;
   m_messenger.setMessage(ReplCode::SHUTDOWN, message);
   m_messenger.send(dstNodeId, message, connection);
-
-  m_clientManager->stopReceiveLoop();
 
   m_receiverManager.waitForReceiver(MessageTag::CLIENT);
 }
@@ -97,8 +90,6 @@ Node::init(int argc, char** argv) {
   if (m_electionManager->isLeader() == true) {
     m_acceptConnThread.join();
   }  
-  
-  // m_leaderNodeId = m_clusterSize - 1;
 }
 
 void

@@ -95,12 +95,12 @@ ClientManager::startReceiveLoop() {
   }
 }
 
-void
-ClientManager::stopReceiveLoop() {
-  std::unique_lock<std::mutex> lock(m_isUpMutex);
+// void
+// ClientManager::stopReceiveLoop() {
+//   std::unique_lock<std::mutex> lock(m_isUpMutex);
 
-  m_isUp = false;
-}
+//   m_isUp = false;
+// }
 
 void
 ClientManager::addConnection(Messenger::Connection connection) {

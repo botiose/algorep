@@ -3,7 +3,7 @@
 config="$(cat etc/config.json)"
 
 if [ ! ${PWD##*/} == "algorep" ]; then
-    echo "ssh-mount.sh: Should should be executed from the project's root directory."
+    echo "ssh-mount.sh: Should be executed from the project's root directory."
     exit 1
 fi
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "message-receiver.hh"
 #include "messenger.hh"
 #include "repl-manager.hh"
@@ -9,12 +11,18 @@ public:
   ElectionManager(const Messenger& messenger,
                   std::shared_ptr<ReplManager> replManager);
 
+  void
+  triggerElection();
+
+  void
+  waitForVictor();
+
   /**
    * @brief Handles messages tagged for leader election.
    *
-   * This function encapsulates all leader election logic. Leader election is
-   * done through the usage of the Bully Algorithm. In this algorithm the leader
-   * is set to be the live node with the highest ID. Please visit
+   * This function encapsulates all leader election logic. Leader election
+   * is done through the usage of the Bully Algorithm. In this algorithm the
+   * leader is set to be the live node with the highest ID. Please visit
    * https://en.wikipedia.org/wiki/Bully_algorithm for more information.
    *
    * @param[in] messenger Messenger of the node starting the election.
@@ -28,8 +36,14 @@ public:
                 const Message& receivedMessage,
                 const Messenger::Connection& connection);
 
-private:
-  std::shared_ptr<ReplManager> m_replManager;
+  bool
+  isLeader();
 
-  int m_leaderNodeId;
+private:
+  void
+  startElection();
+
+  std::mutex m_mutex;
+
+  int m_leaderNodeId = -1;
 };

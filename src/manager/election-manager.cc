@@ -1,11 +1,13 @@
 #include <iostream>
 #include <chrono>
+#include <thread>
 
 #include "election-manager.hh"
 #include "message-info.hh"
 
-#define ELECTION_WAIT_DURATION 5
-#define VICTORY_WAIT_DURATION 60
+#define ELECTION_WAIT_DURATION 60
+#define VICTORY_WAIT_DURATION 20
+#define LOOP_SLEEP_DURATION 1000
 
 void
 declareVictory(const Messenger& messenger,
@@ -101,21 +103,22 @@ busyLeaderElectionWait(const Messenger& messenger,
 }
 
 void
-startElection(const Messenger& messenger,
-              const int& nodeId,
-              const int& clusterSize,
-              int& leaderNodeId) {
+ElectionManager::startElection() {
+  std::cout << "election started" << std::endl; 
+  int nodeId = m_messenger.getRank();
+  int clusterSize = m_messenger.getClusterSize();
+
   bool gotVictor = false;
   int victorNodeId;
   while (gotVictor == false) {
     Message message;
-    messenger.setMessage(LeaderElectionCode::ELECTION, message);
+    m_messenger.setMessage(LeaderElectionCode::ELECTION, message);
 
     for (int dstNodeId = nodeId + 1; dstNodeId < clusterSize; dstNodeId++) {
-      messenger.send(dstNodeId, message);
+      m_messenger.send(dstNodeId, message);
     }
 
-    busyLeaderElectionWait(messenger,
+    busyLeaderElectionWait(m_messenger,
                            nodeId,
                            clusterSize,
                            ELECTION_WAIT_DURATION,
@@ -123,18 +126,22 @@ startElection(const Messenger& messenger,
                            victorNodeId);
   }
 
-  leaderNodeId = victorNodeId;
+  {
+    std::unique_lock<std::mutex> lock(m_mutex);
+
+    m_leaderNodeId = victorNodeId;
+  }
 }
 
-ElectionManager::ElectionManager(const Messenger& messenger,   std::shared_ptr<ReplManager> replManager)
-  : MessageReceiver(messenger, MessageTag::LEADER_ELECTION), m_replManager(replManager) {
+ElectionManager::ElectionManager(const Messenger& messenger,
+                                 std::shared_ptr<ReplManager> replManager)
+    : MessageReceiver(messenger, MessageTag::LEADER_ELECTION, replManager) {
 }
 
 void
 ElectionManager::handleMessage(const int& srcNodeId,
                                const Message& receivedMessage,
                                const Messenger::Connection& connection) {
-  std::cout << "election manager: listening" << std::endl;
   int nodeId = m_messenger.getRank();
   int clusterSize = m_messenger.getClusterSize();
   LeaderElectionCode bullyCode = receivedMessage.getCode<LeaderElectionCode>();
@@ -146,17 +153,52 @@ ElectionManager::handleMessage(const int& srcNodeId,
     // higher-numbered processes.
     Message activeMessage;
 
-    m_messenger.setMessage(LeaderElectionCode::ALIVE, activeMessage);
-    m_messenger.send(srcNodeId, activeMessage);
+    if (srcNodeId != nodeId) {
+      m_messenger.setMessage(LeaderElectionCode::ALIVE, activeMessage);
+      m_messenger.send(srcNodeId, activeMessage);
+    }
 
-    if (srcNodeId < nodeId) {
-      startElection(m_messenger, nodeId, clusterSize, m_leaderNodeId);
+    if (srcNodeId <= nodeId) {
+      startElection();
     }
     break;
   }
   case LeaderElectionCode::VICTORY: {
-    m_leaderNodeId = srcNodeId;
+    {
+      std::unique_lock<std::mutex> lock(m_mutex);
+
+      m_leaderNodeId = srcNodeId;
+    }
     break;
   }
+  }
+}
+
+bool
+ElectionManager::isLeader() {
+  std::unique_lock<std::mutex> lock(m_mutex);
+
+  return m_leaderNodeId == m_messenger.getRank();
+}
+
+void
+ElectionManager::triggerElection() {
+  Message message;
+  m_messenger.setMessage(LeaderElectionCode::ELECTION, message);
+
+  m_messenger.send(m_messenger.getRank(), message);
+}
+
+void
+ElectionManager::waitForVictor() {
+  bool gotVictor = false;
+  while (gotVictor == false) {
+    {
+      std::unique_lock<std::mutex> lock(m_mutex);
+
+      gotVictor = m_leaderNodeId != -1;
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
   }
 }

@@ -11,8 +11,7 @@
 
 ConsensusManager::ConsensusManager(const Messenger& messenger,
                                    std::shared_ptr<ReplManager> replManager)
-    : MessageReceiver(messenger, MessageTag::CONSENSUS),
-      m_replManager(replManager) {
+    : MessageReceiver(messenger, MessageTag::CONSENSUS, replManager) {
 }
 
 void

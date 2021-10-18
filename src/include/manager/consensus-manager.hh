@@ -73,7 +73,5 @@ public:
   };
 
 private:
-  std::shared_ptr<ReplManager> m_replManager;
-
   ConsensusContext m_context; /**< current round state/context */
 };

@@ -3,6 +3,12 @@
 #include "message-receiver.hh"
 
 MessageReceiver::MessageReceiver(const Messenger& messenger,
+                                 const MessageTag& tag,
+                                 std::shared_ptr<ReplManager> replManager)
+    : m_messenger(messenger), m_tag(tag), m_replManager(replManager) {
+}
+
+MessageReceiver::MessageReceiver(const Messenger& messenger,
                                  const MessageTag& tag)
     : m_messenger(messenger), m_tag(tag) {
 }
@@ -23,4 +29,9 @@ MessageReceiver::startReceiveLoop() {
       this->handleMessage(srcNodeId, receivedMessage);
     }
   }
+}
+
+MessageTag
+MessageReceiver::getTag() const {
+  return m_tag;
 }

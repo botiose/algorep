@@ -13,7 +13,4 @@ public:
   handleMessage(const int& srcNodeId,
                 const Message& receivedMessage,
                 const Messenger::Connection& connection) final;
-
-private:
-  std::shared_ptr<ReplManager> m_replManager;
 };

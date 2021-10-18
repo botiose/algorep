@@ -10,15 +10,15 @@
 
 ClientManager::ClientManager(const Messenger& messenger,
                              std::shared_ptr<ReplManager> replManager)
-  : MessageReceiver(messenger, MessageTag::CLIENT), m_replManager(replManager) {
+    : MessageReceiver(messenger, MessageTag::CLIENT, replManager) {
 }
 
 void
 ClientManager::handleMessage(const int& srcNodeId,
-                              const Message& receivedMessage,
-                              const Messenger::Connection& connection) {
+                             const Message& receivedMessage,
+                             const Messenger::Connection& connection) {
   ClientCode code = receivedMessage.getCode<ClientCode>();
-  switch(code) {
+  switch (code) {
   case ClientCode::REPLICATE: {
     const std::string& data = receivedMessage.getData();
 
@@ -28,8 +28,8 @@ ClientManager::handleMessage(const int& srcNodeId,
 
     bool consensusReached;
     ConsensusManager::startConsensus(m_messenger, value, consensusReached);
-    
-    if(consensusReached == true) {
+
+    if (consensusReached == true) {
       Message message;
       m_messenger.setMessage(ClientCode::SUCCESS, message);
       m_messenger.send(srcNodeId, message, connection);
@@ -42,7 +42,7 @@ ClientManager::handleMessage(const int& srcNodeId,
 
 void
 ClientManager::receivePendingMessages(bool& isUp) {
-  std::unique_lock<std::mutex> lock(m_mutex);
+  std::unique_lock<std::mutex> lock(m_connectionMutex);
 
   int i = 0;
 
@@ -84,14 +84,27 @@ ClientManager::startReceiveLoop() {
   bool isUp = true;
   while (isUp == true) {
     this->receivePendingMessages(isUp);
-    
+
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
+
+    {
+      std::unique_lock<std::mutex> lock(m_isUpMutex);
+
+      isUp = m_isUp;
+    }
   }
 }
 
 void
+ClientManager::stopReceiveLoop() {
+  std::unique_lock<std::mutex> lock(m_isUpMutex);
+
+  m_isUp = false;
+}
+
+void
 ClientManager::addConnection(Messenger::Connection connection) {
-  std::unique_lock<std::mutex> lock(m_mutex);
+  std::unique_lock<std::mutex> lock(m_connectionMutex);
 
   m_clientConnections.push_back(connection);
 }

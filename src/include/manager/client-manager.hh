@@ -23,13 +23,17 @@ public:
   void
   addConnection(Messenger::Connection connection);
 
+  void
+  stopReceiveLoop();
+
 private:
+  bool m_isUp = true;
+
   void
   receivePendingMessages(bool& isUp);
 
-  std::shared_ptr<ReplManager> m_replManager;
-
-  std::mutex m_mutex;
+  std::mutex m_connectionMutex;
+  std::mutex m_isUpMutex;
 
   std::list<Messenger::Connection> m_clientConnections;
 };

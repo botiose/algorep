@@ -4,8 +4,7 @@
 
 FailureManager::FailureManager(const Messenger& messenger,
                                std::shared_ptr<ReplManager> replManager)
-    : MessageReceiver(messenger, MessageTag::FAILURE_DETECTION),
-      m_replManager(replManager) {
+  : MessageReceiver(messenger, MessageTag::FAILURE_DETECTION, replManager) {
 }
 
 void

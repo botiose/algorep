@@ -15,8 +15,9 @@
 #include <thread>
 
 #include "receiver-manager.hh"
+#include "client-manager.hh"
+#include "election-manager.hh"
 #include "messenger.hh"
-#include "consensus-manager.hh"
 
 class Node {
 public:
@@ -30,16 +31,6 @@ public:
 
   void
   destroy() const;
-
-  /**
-   * @brief Starts the receive loop.
-   *
-   * This is the main loop of node in which all incoming messages are received
-   * and handled.
-   *
-   */
-  void
-  startMainLoops();
 
   /**
    * @brief returns whether the current node is a leader or not.
@@ -59,12 +50,14 @@ private:
   ReceiverManager m_receiverManager;
 
   std::shared_ptr<ReplManager> m_replManager;
+  std::shared_ptr<ClientManager> m_clientManager;
+  std::shared_ptr<ElectionManager> m_electionManager;
 
   Messenger m_messenger;               /**< local messenger instance */
 
+  // TODO remove
   int m_nodeId;       /**< id of the current node */
   int m_clusterSize;  /**< number of nodes in the cluster */
-  int m_leaderNodeId; /**< id of the leader node */
 
   std::thread m_acceptConnThread;
 };

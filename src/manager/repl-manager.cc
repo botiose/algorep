@@ -12,7 +12,7 @@
 #define LOOP_SLEEP_DURATION 100
 
 ReplManager::ReplManager(const Messenger& messenger)
-    : MessageReceiver(messenger, MessageTag::REPL) {
+  : MessageReceiver(messenger, MessageTag::REPL) {
 }
 
 void
@@ -115,7 +115,9 @@ ReplManager::startReceiveLoop() {
         ifs, m_messenger, receivedMessage, messageReceived, dstNodeId);
 
     if (messageReceived == true && dstNodeId == m_messenger.getRank()) {
-      this->handleMessage(srcNodeId, receivedMessage);
+      if (dstNodeId == m_messenger.getRank()) {
+        this->handleMessage(srcNodeId, receivedMessage);
+      }
 
       isUp = receivedMessage.getCodeInt() != 0;
     }

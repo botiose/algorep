@@ -6,13 +6,15 @@
 #include <json.hpp>
 
 #include "repl-manager.hh"
+#include "receiver-manager.hh"
 
 #define REPL_MSG_FILEPATH "etc/repl-msg.txt"
 
 #define LOOP_SLEEP_DURATION 100
 
-ReplManager::ReplManager(const Messenger& messenger)
-  : MessageReceiver(messenger, MessageTag::REPL) {
+ReplManager::ReplManager(Messenger& messenger,
+                         std::shared_ptr<ReceiverManager> receiverManager)
+    : MessageReceiver(messenger, managedTag, receiverManager) {
 }
 
 void
@@ -99,7 +101,7 @@ fetchMessageFromFile(std::ifstream& ifs,
 }
 
 void
-ReplManager::startReceiveLoop() {
+ReplManager::startReceiver() {
   std::ifstream ifs(REPL_MSG_FILEPATH);
 
   // TODO check file validity
@@ -126,6 +128,10 @@ ReplManager::startReceiveLoop() {
   }
 
   ifs.close();
+
+  m_receiverManager->stopReceiver(MessageTag::LEADER_ELECTION);
+  m_receiverManager->stopReceiver(MessageTag::CONSENSUS);
+  m_receiverManager->stopReceiver(MessageTag::FAILURE_DETECTION);
 }
 
 bool

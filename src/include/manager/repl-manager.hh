@@ -1,16 +1,20 @@
 #pragma once
 
 #include <mutex>
+#include <memory>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
 
 class ReplManager : public MessageReceiver {
 public:
-  ReplManager(const Messenger& messenger);
+  inline static MessageTag managedTag = MessageTag::REPL;
+
+  ReplManager(Messenger& messenger,
+              std::shared_ptr<ReceiverManager> receiverManager);
 
   void
-  startReceiveLoop() final;
+  startReceiver() final;
 
   void
   handleMessage(const int& srcNodeId,

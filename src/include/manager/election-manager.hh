@@ -8,8 +8,10 @@
 
 class ElectionManager : public MessageReceiver {
 public:
-  ElectionManager(const Messenger& messenger,
-                  std::shared_ptr<ReplManager> replManager);
+  inline static MessageTag managedTag = MessageTag::LEADER_ELECTION;
+
+  ElectionManager(Messenger& messenger,
+                  std::shared_ptr<ReceiverManager> receiverManager);
 
   void
   triggerElection();
@@ -36,14 +38,13 @@ public:
                 const Message& receivedMessage,
                 const Messenger::Connection& connection);
 
-  bool
-  isLeader();
+  void
+  stopReceiver() final;
 
 private:
+
   void
   startElection();
-
-  std::mutex m_mutex;
 
   int m_leaderNodeId = -1;
 };

@@ -32,14 +32,6 @@ public:
   void
   destroy() const;
 
-  /**
-   * @brief returns whether the current node is a leader or not.
-   *
-   * @return whether the current node is a leader.
-   */
-  bool
-  isLeader() const;
-
   void
   enableClientCommunication();
 
@@ -47,17 +39,11 @@ public:
   disableClientCommunication();
 
 private:
-  ReceiverManager m_receiverManager;
-
-  std::shared_ptr<ReplManager> m_replManager;
-  std::shared_ptr<ClientManager> m_clientManager;
-  std::shared_ptr<ElectionManager> m_electionManager;
+  std::shared_ptr<ReceiverManager> m_receiverManager;
 
   Messenger m_messenger;               /**< local messenger instance */
 
   // TODO remove
   int m_nodeId;       /**< id of the current node */
   int m_clusterSize;  /**< number of nodes in the cluster */
-
-  std::thread m_acceptConnThread;
 };

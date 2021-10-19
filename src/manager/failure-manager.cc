@@ -2,13 +2,20 @@
 
 #include "failure-manager.hh"
 
-FailureManager::FailureManager(const Messenger& messenger,
-                               std::shared_ptr<ReplManager> replManager)
-  : MessageReceiver(messenger, MessageTag::FAILURE_DETECTION, replManager) {
+FailureManager::FailureManager(Messenger& messenger,
+                               std::shared_ptr<ReceiverManager> receiverManager)
+    : MessageReceiver(messenger, managedTag, receiverManager) {
 }
 
 void
 FailureManager::handleMessage(const int& srcNodeId,
                               const Message& receivedMessage,
                               const Messenger::Connection& connection) {
+}
+
+void
+FailureManager::stopReceiver() {
+  Message message;
+  m_messenger.setMessage(FailDetectionCode::SHUTDOWN, message);
+  m_messenger.send(m_messenger.getRank(), message);
 }

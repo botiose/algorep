@@ -159,6 +159,7 @@ Messenger::publish() {
   assert(m_isPublished == false);
 
   MPI_Open_port(MPI_INFO_NULL, m_port);
+  MPI_Open_port(MPI_INFO_NULL, m_port);
 
   MPI_Info scopeInfo;
   MPI_Info_create(&scopeInfo);

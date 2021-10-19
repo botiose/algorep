@@ -2,8 +2,10 @@
 #include <chrono>
 #include <thread>
 
+#include "client-manager.hh"
 #include "election-manager.hh"
 #include "message-info.hh"
+#include "receiver-manager.hh"
 
 #define ELECTION_WAIT_DURATION 60
 #define VICTORY_WAIT_DURATION 20
@@ -126,16 +128,27 @@ ElectionManager::startElection() {
                            victorNodeId);
   }
 
-  {
-    std::unique_lock<std::mutex> lock(m_mutex);
+
+  if (m_leaderNodeId != victorNodeId) {
+    if (m_messenger.getRank() == victorNodeId) {
+      // if the node won the election after previously not being the leader
+      // ClientManager::startClientComm(m_messenger, m_receiverManager);
+      std::shared_ptr<ClientManager> clientManager =
+        std::make_shared<ClientManager>(m_messenger, m_receiverManager);
+      m_receiverManager->startReceiver(clientManager);
+    } else if (m_messenger.getRank() == m_leaderNodeId) {
+      // if the node lost the election after previously being the leader
+      // ClientManager::stopClientComm(m_messenger, m_receiverManager);
+      m_receiverManager->stopReceiverWait(MessageTag::CLIENT);
+    }
 
     m_leaderNodeId = victorNodeId;
   }
 }
 
-ElectionManager::ElectionManager(const Messenger& messenger,
-                                 std::shared_ptr<ReplManager> replManager)
-    : MessageReceiver(messenger, MessageTag::LEADER_ELECTION, replManager) {
+ElectionManager::ElectionManager(
+    Messenger& messenger, std::shared_ptr<ReceiverManager> receiverManager)
+    : MessageReceiver(messenger, managedTag, receiverManager) {
 }
 
 void
@@ -164,21 +177,10 @@ ElectionManager::handleMessage(const int& srcNodeId,
     break;
   }
   case LeaderElectionCode::VICTORY: {
-    {
-      std::unique_lock<std::mutex> lock(m_mutex);
-
-      m_leaderNodeId = srcNodeId;
-    }
+    m_leaderNodeId = srcNodeId;
     break;
   }
   }
-}
-
-bool
-ElectionManager::isLeader() {
-  std::unique_lock<std::mutex> lock(m_mutex);
-
-  return m_leaderNodeId == m_messenger.getRank();
 }
 
 void
@@ -193,12 +195,21 @@ void
 ElectionManager::waitForVictor() {
   bool gotVictor = false;
   while (gotVictor == false) {
-    {
-      std::unique_lock<std::mutex> lock(m_mutex);
-
-      gotVictor = m_leaderNodeId != -1;
-    }
+    gotVictor = m_leaderNodeId != -1;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
+  }
+}
+
+void
+ElectionManager::stopReceiver() {
+  Message message;
+  m_messenger.setMessage(LeaderElectionCode::SHUTDOWN, message);
+
+  int nodeId = m_messenger.getRank();
+  m_messenger.send(nodeId, message);
+
+  if (m_leaderNodeId == nodeId) {
+    m_receiverManager->stopReceiverWait(MessageTag::CLIENT);
   }
 }

@@ -30,6 +30,8 @@
 ** TODO implement logic for relinquishing leadership upon process recovery
 ** TODO in leader election add call to enableClientCommunication
 ** DONE start a leader election instead of setting the leader upon startup
+** TODO change the isUp assignement to use getCode instead of getCodeInt for all
+** TODO give complete ownership of receiver to the receiver manager
 * TODO messenger
 ** TODO change blocking Send to non-blocking Isend
 ** DONE change the 'cluster size' and rank getter to return the values
@@ -41,3 +43,4 @@
 * TODO doc
 ** TODO why repl messaging is done through a file
 ** TODO why the repl-manager is passed to all other managers
+** TODO why the accept thread is not an accept-manager

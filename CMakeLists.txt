@@ -29,6 +29,10 @@ set(CLIENT_SRC
   src/message-info.cc
   )
 
+set(CONN_SRC
+  src/main.cc
+  )
+
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   set_source_files_properties(${SRC}
     PROPERTIES COMPILE_FLAGS "-Wall -Wextra -pedantic -Werror -g"

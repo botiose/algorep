@@ -9,9 +9,10 @@
 #define PROMISE_WAIT_DURATION 3
 #define ACCEPT_WAIT_DURATION 5
 
-ConsensusManager::ConsensusManager(const Messenger& messenger,
-                                   std::shared_ptr<ReplManager> replManager)
-    : MessageReceiver(messenger, MessageTag::CONSENSUS, replManager) {
+ConsensusManager::ConsensusManager(
+    Messenger& messenger,
+    std::shared_ptr<ReceiverManager> receiverManager)
+    : MessageReceiver(messenger, managedTag, receiverManager) {
 }
 
 void
@@ -272,4 +273,11 @@ ConsensusManager::handleMessage(const int& srcNodeId,
 
 ConsensusManager::ConsensusContext::ConsensusContext()
     : maxId(-1), valueAccepted(false), acceptedId(-1), acceptedValue() {
+}
+
+void
+ConsensusManager::stopReceiver() {
+  Message message;
+  m_messenger.setMessage(ConsensusCode::SHUTDOWN, message);
+  m_messenger.send(m_messenger.getRank(), message);
 }

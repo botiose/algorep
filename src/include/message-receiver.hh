@@ -4,32 +4,29 @@
 #include "messenger.hh"
 #include "message.hh"
 
-class ReplManager;
+class ReceiverManager;
 
 class MessageReceiver {
 public:
-  MessageReceiver(const Messenger& messenger,
-                  const MessageTag& tag);
-
-  MessageReceiver(const Messenger& messenger,
+  MessageReceiver(Messenger& messenger,
                   const MessageTag& tag,
-                  std::shared_ptr<ReplManager> replManager);
+                  std::shared_ptr<ReceiverManager> receiverManager);
 
   virtual void
-  startReceiveLoop();
+  startReceiver();
 
   virtual void
   handleMessage(const int& srcNodeId,
                 const Message& receivedMessage,
                 const Messenger::Connection& connection = {MPI_COMM_WORLD}) = 0;
 
-  MessageTag
-  getTag() const;
+  virtual void
+  stopReceiver() {};
 
 protected:
-  std::shared_ptr<ReplManager> m_replManager;
+  std::shared_ptr<ReceiverManager> m_receiverManager;
 
-  const Messenger& m_messenger;
+  Messenger& m_messenger;
 
   MessageTag m_tag;
 };

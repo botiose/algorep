@@ -6,11 +6,16 @@
 
 class FailureManager : public MessageReceiver {
 public:
-  FailureManager(const Messenger& messenger,
-                 std::shared_ptr<ReplManager> replManager);
+  inline static MessageTag managedTag = MessageTag::FAILURE_DETECTION;
+
+  FailureManager(Messenger& messenger,
+                 std::shared_ptr<ReceiverManager> receiverManager);
 
   void
   handleMessage(const int& srcNodeId,
                 const Message& receivedMessage,
                 const Messenger::Connection& connection) final;
+
+  void
+  stopReceiver() final;
 };

@@ -23,8 +23,9 @@ for archs in $(jq -rc ".nodes | to_entries[]" <<< "$config"); do
         if [ $coreCount -eq 0 ]; then
             continue
         fi
-        
+
         address=$(jq -rc ".address" <<< "$node")
+        
         host=$(cut -d'@' -f2 <<< "$address")
         projectPath=$(jq -rc ".projectPath" <<< "$node")
         args="$args --host $host:$coreCount $v $projectPath/build/$arch/bin/server :"

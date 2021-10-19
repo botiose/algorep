@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <list>
+#include <thread>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
@@ -9,11 +10,13 @@
 
 class ClientManager : public MessageReceiver {
 public:
-  ClientManager(const Messenger& messenger,
-                std::shared_ptr<ReplManager> replManager);
+  inline static MessageTag managedTag = MessageTag::CLIENT;
+
+  ClientManager(Messenger& messenger,
+                std::shared_ptr<ReceiverManager> receiverManager);
 
   void
-  startReceiveLoop() final;
+  startReceiver() final;
 
   void
   handleMessage(const int& srcNodeId,
@@ -21,16 +24,13 @@ public:
                 const Messenger::Connection& connection) final;
 
   void
-  addConnection(Messenger::Connection connection);
-
+  stopReceiver() final;
 private:
-  bool m_isUp = true;
-
-  void
-  receivePendingMessages(bool& isUp);
+  void receivePendingMessages(bool& isUp);
 
   std::mutex m_connectionMutex;
-  std::mutex m_isUpMutex;
 
   std::list<Messenger::Connection> m_clientConnections;
+
+  std::thread m_acceptConnThread;
 };

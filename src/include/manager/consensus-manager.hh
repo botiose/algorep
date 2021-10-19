@@ -18,8 +18,10 @@
 
 class ConsensusManager : public MessageReceiver {
 public:
-  ConsensusManager(const Messenger& messenger,
-                   std::shared_ptr<ReplManager> replManager);
+  inline static MessageTag managedTag = MessageTag::CONSENSUS;
+
+  ConsensusManager(Messenger& messenger,
+                   std::shared_ptr<ReceiverManager> receiverManager);
   /**
    * @brief Start on consensus for the given value.
    *
@@ -71,6 +73,9 @@ public:
     int acceptedId = -1;        /**< id of the associated accepted round */
     std::string acceptedValue;  /**< value of the associated accepted round */
   };
+
+  void
+  stopReceiver() final;
 
 private:
   ConsensusContext m_context; /**< current round state/context */

@@ -2,19 +2,15 @@
 
 #include "message-receiver.hh"
 
-MessageReceiver::MessageReceiver(const Messenger& messenger,
-                                 const MessageTag& tag,
-                                 std::shared_ptr<ReplManager> replManager)
-    : m_messenger(messenger), m_tag(tag), m_replManager(replManager) {
-}
-
-MessageReceiver::MessageReceiver(const Messenger& messenger,
-                                 const MessageTag& tag)
-    : m_messenger(messenger), m_tag(tag) {
+MessageReceiver::MessageReceiver(
+    Messenger& messenger,
+    const MessageTag& tag,
+    std::shared_ptr<ReceiverManager> receiverManager)
+    : m_messenger(messenger), m_tag(tag), m_receiverManager(receiverManager) {
 }
 
 void
-MessageReceiver::startReceiveLoop() {
+MessageReceiver::startReceiver() {
   bool isUp = true;
   while (isUp == true) {
     int srcNodeId;
@@ -29,9 +25,4 @@ MessageReceiver::startReceiveLoop() {
       this->handleMessage(srcNodeId, receivedMessage);
     }
   }
-}
-
-MessageTag
-MessageReceiver::getTag() const {
-  return m_tag;
 }

@@ -5,6 +5,7 @@
 
 #include "client-manager.hh"
 #include "consensus-manager.hh"
+#include "election-manager.hh"
 #include "receiver-manager.hh"
 
 #define LOOP_SLEEP_DURATION 50
@@ -82,15 +83,13 @@ ClientManager::receivePendingMessages(bool& isUp) {
 
 void
 acceptConnection(Messenger& messenger,
+                 const std::string& port,
                  std::list<Messenger::Connection>& clientConnections,
                  std::mutex& connectionMutex) {
-  messenger.publish();
-
-  std::cout << "accepting connections" << std::endl;
   bool isUp = true;
   while (isUp == true) {
     Messenger::Connection connection;
-    messenger.acceptConnection(connection);
+    messenger.acceptConnBlock(port, connection);
 
     int srcNodeId;
     Message message;
@@ -102,18 +101,76 @@ acceptConnection(Messenger& messenger,
       clientConnections.push_back(connection);
     }
 
-    messenger.send(messenger.getRank(), message);
-
     isUp = message.getCode<ClientCode>() != ClientCode::SHUTDOWN;
   }
+}
 
-  messenger.unpublish();
+void
+sendPort(const Messenger& messenger, const std::string& port) {
+  int nextNodeId = (messenger.getRank() + 1) % messenger.getClusterSize();
+
+  nlohmann::json messageJson = {{"port", port}};
+  std::string messageString = messageJson.dump();
+  Message message;
+  messenger.setMessage(ClientCode::PORT, messageString, message);
+
+  messenger.send(nextNodeId, message);
+}
+
+void
+receivePort(const Messenger& messenger, std::string& nextNodePort) {
+  int srcNodeId;
+  Message receivedMessage;
+  messenger.receiveWithTagBlock(MessageTag::CLIENT, srcNodeId, receivedMessage);
+
+  const std::string& messageString = receivedMessage.getData();
+  nlohmann::json messageJson = nlohmann::json::parse(messageString);
+  messageJson.at("port").get_to(nextNodePort);
+}
+
+void
+exchangePorts(const Messenger& messenger,
+              const std::string& port,
+              std::string& nextNodePort) {
+  if (messenger.getRank() == 0) {
+    sendPort(messenger, port);
+    receivePort(messenger, nextNodePort);
+  } else {
+    receivePort(messenger, nextNodePort);
+    sendPort(messenger, port);
+  }
+}
+
+void
+shutdownNeighbor(const Messenger& messenger,
+                 std::shared_ptr<ReceiverManager> receiverManager,
+                 const std::string& nextNodePort) {
+  std::shared_ptr<ElectionManager> electionManager =
+      receiverManager->getReceiver<ElectionManager>();
+
+  int nodeId = messenger.getRank();
+  int clusterSize = messenger.getClusterSize();
+    
+  if (electionManager->getLeaderNodeId() != (nodeId + 1) % clusterSize) {
+    Messenger::Connection connection;
+    messenger.connect(nextNodePort, connection);
+
+    Message message;
+    messenger.setMessage(ClientCode::SHUTDOWN, message);
+    messenger.send(0, message, connection);
+    messenger.send(0, message, connection);
+  }
 }
 
 void
 ClientManager::startReceiver() {
+  m_messenger.openPort(m_port);
+
+  exchangePorts(m_messenger, m_port, m_nextNodePort);
+
   m_acceptConnThread = std::thread(acceptConnection,
                                    std::ref(m_messenger),
+                                   std::ref(m_port),
                                    std::ref(m_clientConnections),
                                    std::ref(m_connectionMutex));
 
@@ -123,19 +180,21 @@ ClientManager::startReceiver() {
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
   }
-}
-
-void
-ClientManager::stopReceiver() {
-  Messenger::Connection connection;
-  m_messenger.selfConnect(connection);
-
-  int dstNodeId = 0;
-  Message message;
-  m_messenger.setMessage(ClientCode::SHUTDOWN, message);
-  m_messenger.send(dstNodeId, message, connection);
 
   m_acceptConnThread.join();
 
-  // TODO disconnect all connections
+  m_messenger.closePort(m_port);
+
+  shutdownNeighbor(m_messenger, m_receiverManager, m_nextNodePort);
+}
+
+void
+ClientManager::enableClientConn() {
+  m_messenger.publishPort(m_port);
+}
+
+
+void
+ClientManager::disableClientConn() {
+  m_messenger.unpublishPort(m_port);
 }

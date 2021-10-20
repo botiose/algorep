@@ -23,3 +23,5 @@ while [ $isUp -eq 0 ]; do
     $(test "$command" != "shutdown")
     isUp=$?
 done
+
+mpirun --ompi-server file:etc/urifile --host localhost bin/shutdown-client

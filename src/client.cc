@@ -13,11 +13,32 @@ Client::connect(int argc, char* argv[]) {
   int clusterSize;
   m_messenger.start(argc, argv, rank, clusterSize);
 
-  m_messenger.connect(m_serverConnection);
+  std::string port;
+  m_messenger.lookupServerPort(port);
+
+  m_messenger.connect(port, m_serverConnection);
 
   Message message;
   m_messenger.setMessage(ClientCode::CONNECT, message);
 
+  m_messenger.send(0, message, m_serverConnection);
+}
+
+void
+Client::shutdownServer(int argc, char* argv[]) {
+  int rank;
+  int clusterSize;
+  m_messenger.start(argc, argv, rank, clusterSize);
+
+  std::string port;
+  m_messenger.lookupServerPort(port);
+
+  m_messenger.connect(port, m_serverConnection);
+
+  Message message;
+  m_messenger.setMessage(ClientCode::SHUTDOWN, message);
+
+  m_messenger.send(0, message, m_serverConnection);
   m_messenger.send(0, message, m_serverConnection);
 }
 

@@ -41,6 +41,10 @@ public:
   void
   stopReceiver() final;
 
+  // thread safety left to the user
+  int
+  getLeaderNodeId() const;
+
 private:
 
   void

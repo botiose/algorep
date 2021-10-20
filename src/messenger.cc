@@ -130,10 +130,7 @@ Messenger::receiveWithTag(const MessageTag& messageTag,
 }
 
 void
-Messenger::start(int argc,
-                 char** argv,
-                 int& rank,
-                 int& clusterSize) {
+Messenger::start(int argc, char** argv, int& rank, int& clusterSize) {
   int provided;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 
@@ -155,42 +152,46 @@ Messenger::stop() const {
 }
 
 void
-Messenger::publish() {
-  assert(m_isPublished == false);
+Messenger::openPort(std::string& port) const {
+  port.resize(PORT_STRING_SIZE);
+  char cPort[PORT_STRING_SIZE];
+  MPI_Open_port(MPI_INFO_NULL, cPort);
 
-  MPI_Open_port(MPI_INFO_NULL, m_port);
-  MPI_Open_port(MPI_INFO_NULL, m_port);
+  port = std::string(cPort);
+}
 
+void
+Messenger::closePort(const std::string& port) const {
+  MPI_Close_port(port.c_str());
+}
+
+void
+Messenger::publishPort(const std::string& port) const {
   MPI_Info scopeInfo;
   MPI_Info_create(&scopeInfo);
   MPI_Info_set(scopeInfo, "ompi_global_scope", "true");
 
-  MPI_Publish_name(SERVER_NAME, scopeInfo, m_port);
+  MPI_Publish_name(SERVER_NAME, scopeInfo, port.c_str());
 
-  m_isPublished = true;
+  std::cout << "messenger pusblished" << std::endl;
 }
 
 void
-Messenger::unpublish() {
-  assert(m_isPublished == true);
-
+Messenger::unpublishPort(const std::string& port) const {
   MPI_Info scopeInfo;
   MPI_Info_create(&scopeInfo);
   MPI_Info_set(scopeInfo, "ompi_global_scope", "true");
 
-  MPI_Unpublish_name(SERVER_NAME, scopeInfo, m_port);
+  MPI_Unpublish_name(SERVER_NAME, scopeInfo, port.c_str());
 
-  MPI_Close_port(m_port);
-
-  m_isPublished = false;
+  std::cout << "messenger unpusblished" << std::endl;
 }
 
 void
-Messenger::acceptConnection(Messenger::Connection& connection) const {
-  assert(m_isPublished == true);
-
+Messenger::acceptConnBlock(const std::string& port,
+                           Messenger::Connection& connection) const {
   MPI_Comm_accept(
-      m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
+      port.c_str(), MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
   std::cout << "connection accepted" << std::endl;
 }
 
@@ -201,33 +202,28 @@ Messenger::generateUniqueId(const int& nodeId, int& id) const {
   id = time | nodeId;
 }
 
-bool
-Messenger::getIsPublished() const {
-  return m_isPublished;
-}
-
 void
-Messenger::selfConnect(Messenger::Connection& connection) const {
-  MPI_Comm_connect(
-      m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
-}
-
-void
-Messenger::connect(Messenger::Connection& connection) {
+Messenger::lookupServerPort(std::string& port) const {
   MPI_Info scopeInfo;
   MPI_Info_create(&scopeInfo);
   MPI_Info_set(scopeInfo, "ompi_lookup_order", "global");
 
-  MPI_Lookup_name(SERVER_NAME, scopeInfo, &m_port[0]);
+  char cPort[PORT_STRING_SIZE];
+  MPI_Lookup_name(SERVER_NAME, scopeInfo, &cPort[0]);
+  port = std::string(cPort);
+}
 
+void
+Messenger::connect(const std::string& port,
+                   Messenger::Connection& connection) const {
   MPI_Comm_connect(
-      m_port, MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
-  std::cout << "connected" << std::endl; 
+      port.c_str(), MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
+  std::cout << "connected" << std::endl;
 }
 
 void
 Messenger::disconnect(Messenger::Connection& connection) const {
-  std::cout << "disconnected" << std::endl; 
+  std::cout << "disconnected" << std::endl;
   MPI_Comm_disconnect(&connection.connection);
 }
 

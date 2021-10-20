@@ -3,6 +3,7 @@
 #include <mutex>
 #include <list>
 #include <thread>
+#include <string>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
@@ -24,8 +25,14 @@ public:
                 const Messenger::Connection& connection) final;
 
   void
-  stopReceiver() final;
+  enableClientConn();
+
+  void
+  disableClientConn();
 private:
+  std::string m_port;
+  std::string m_nextNodePort;
+
   void receivePendingMessages(bool& isUp);
 
   std::mutex m_connectionMutex;

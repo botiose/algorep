@@ -4,9 +4,7 @@ int
 main(int argc, char* argv[]) {
   Client client{};
 
-  client.connect(argc, argv);
-
-  client.replicate("Hello World");
+  client.shutdownServer(argc, argv);
 
   client.disconnect();
 

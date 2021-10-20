@@ -130,16 +130,14 @@ ElectionManager::startElection() {
 
 
   if (m_leaderNodeId != victorNodeId) {
+    std::shared_ptr<ClientManager> clientManager =
+        m_receiverManager->getReceiver<ClientManager>();
     if (m_messenger.getRank() == victorNodeId) {
       // if the node won the election after previously not being the leader
-      // ClientManager::startClientComm(m_messenger, m_receiverManager);
-      std::shared_ptr<ClientManager> clientManager =
-        std::make_shared<ClientManager>(m_messenger, m_receiverManager);
-      m_receiverManager->startReceiver(clientManager);
+      clientManager->enableClientConn();
     } else if (m_messenger.getRank() == m_leaderNodeId) {
       // if the node lost the election after previously being the leader
-      // ClientManager::stopClientComm(m_messenger, m_receiverManager);
-      m_receiverManager->stopReceiverWait(MessageTag::CLIENT);
+      clientManager->disableClientConn();
     }
 
     m_leaderNodeId = victorNodeId;
@@ -208,8 +206,9 @@ ElectionManager::stopReceiver() {
 
   int nodeId = m_messenger.getRank();
   m_messenger.send(nodeId, message);
+}
 
-  if (m_leaderNodeId == nodeId) {
-    m_receiverManager->stopReceiverWait(MessageTag::CLIENT);
-  }
+int
+ElectionManager::getLeaderNodeId() const {
+  return m_leaderNodeId;
 }

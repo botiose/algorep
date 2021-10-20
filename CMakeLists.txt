@@ -21,16 +21,21 @@ set(SERVER_SRC
   src/manager/repl-manager.cc
   )
 
-set(CLIENT_SRC
-  src/client-main.cc
+set(CLIENT_COMMON_SRC
   src/client.cc
   src/messenger.cc
   src/message.cc
   src/message-info.cc
   )
 
-set(CONN_SRC
-  src/main.cc
+set(CLIENT_SRC
+  src/client-main.cc
+  ${CLIENT_COMMON_SRC}
+  )
+
+set(SHUTDOWN_CLIENT_SRC
+  src/shutdown-client-main.cc
+  ${CLIENT_COMMON_SRC}
   )
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -47,6 +52,10 @@ add_executable(client
   ${CLIENT_SRC}
   )
 
+add_executable(shutdown-client
+  ${SHUTDOWN_CLIENT_SRC}
+  )
+
 set(COMMON_INCLUDES
   "${PROJECT_SOURCE_DIR}/extern/json"
   "${PROJECT_SOURCE_DIR}/src/include"
@@ -58,6 +67,10 @@ target_include_directories(client PUBLIC
   )
 
 target_include_directories(server PUBLIC
+  ${COMMON_INCLUDES}
+  )
+
+target_include_directories(shutdown-client PUBLIC
   ${COMMON_INCLUDES}
   )
 
@@ -94,7 +107,7 @@ add_custom_target(run-server
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-server.sh
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS server crosscompile-server etc-link clear-repl
+  DEPENDS server crosscompile-server etc-link clear-repl shutdown-client
   )
 
 add_subdirectory(test EXCLUDE_FROM_ALL)

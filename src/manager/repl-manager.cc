@@ -67,12 +67,18 @@ parseLine(const std::string& line,
           int& dstNodeId) {
   if (line.empty() == false) {
     size_t delimiterPos = line.find(",");
+    bool delimiterFound = delimiterPos != std::string::npos;
+    if (delimiterFound == true || line == "shutdown") {
+      std::string codeStr;
 
-    if (delimiterPos != std::string::npos) {
-      std::string dstNodeIdStr = line.substr(0, delimiterPos);
-      std::string codeStr = line.substr(delimiterPos + 1);
-
-      dstNodeId = std::stoi(dstNodeIdStr);
+      if (delimiterFound == true) {
+        std::string dstNodeIdStr = line.substr(0, delimiterPos);
+        dstNodeId = std::stoi(dstNodeIdStr);
+        codeStr = line.substr(delimiterPos + 1);
+      } else {
+        dstNodeId = messenger.getRank();
+        codeStr = line;
+      }
 
       if (0 <= dstNodeId && dstNodeId < messenger.getClusterSize()) {
         auto codeIte = replParseMap.find(codeStr);

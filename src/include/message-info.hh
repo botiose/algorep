@@ -28,6 +28,7 @@ enum class FailDetectionCode { SHUTDOWN, SIZE };
 
 enum class ClientCode {
   SHUTDOWN,
+  PORT,
   CONNECT,
   DISCONNECT,
   REPLICATE,

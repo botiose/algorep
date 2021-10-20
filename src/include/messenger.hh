@@ -12,9 +12,12 @@
 #pragma once
 
 #include <mpi.h>
+#include <string>
 
 #include "message.hh"
 #include "message-info.hh"
+
+#define PORT_STRING_SIZE MPI_MAX_PORT_NAME
 
 class Messenger {
 public:
@@ -148,24 +151,27 @@ public:
 
   void
   probeTagBlock(const Connection& connection, MessageTag& messageTag) const;
-  
-  void
-  publish();
 
   void
-  unpublish();
+  openPort(std::string& port) const;
 
   void
-  acceptConnection(Connection& connection) const;
-
-  bool
-  getIsPublished() const;
+  closePort(const std::string& port) const;
 
   void
-  selfConnect(Connection& connection) const;
+  publishPort(const std::string& port) const;
 
   void
-  connect(Connection& connection);
+  unpublishPort(const std::string& port) const;
+
+  void
+  acceptConnBlock(const std::string& port, Connection& connection) const;
+
+  void
+  lookupServerPort(std::string& port) const;
+
+  void
+  connect(const std::string& port, Connection& connection) const;
 
   void
   disconnect(Connection& connection) const;
@@ -177,7 +183,7 @@ private:
   int m_rank; /**< rank of the current process */
   int m_clusterSize;
   bool m_isPublished = false;
-  char m_port[MPI_MAX_PORT_NAME];
+  // char m_port[PORT_STRING_SIZE];
 };
 
 #include "messenger.hxx"

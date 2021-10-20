@@ -10,6 +10,9 @@ public:
   connect(int argc, char** argv);
 
   void
+  shutdownServer(int argc, char* argv[]);
+  
+  void
   replicate(const std::string& data) const;
 
   void

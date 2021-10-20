@@ -24,21 +24,25 @@ Node::init(int argc, char** argv) {
       std::make_shared<ConsensusManager>(m_messenger, m_receiverManager);
   std::shared_ptr<FailureManager> failureManager =
       std::make_shared<FailureManager>(m_messenger, m_receiverManager);
+  std::shared_ptr<ClientManager> clientManager =
+    std::make_shared<ClientManager>(m_messenger, m_receiverManager);
 
   m_receiverManager->startReceiver(replManager);
   m_receiverManager->startReceiver(electionManager);
   m_receiverManager->startReceiver(consensusManager);
   m_receiverManager->startReceiver(failureManager);
+  m_receiverManager->startReceiver(clientManager);
 
   // TODO: start: move this to the election manager 
   electionManager->triggerElection();
   electionManager->waitForVictor();
   // TODO: stop
-
+  
   m_receiverManager->waitForReceiver(MessageTag::REPL);
   m_receiverManager->waitForReceiver(MessageTag::LEADER_ELECTION);
   m_receiverManager->waitForReceiver(MessageTag::CONSENSUS);
   m_receiverManager->waitForReceiver(MessageTag::FAILURE_DETECTION);
+  m_receiverManager->waitForReceiver(MessageTag::CLIENT);
 }
 
 void

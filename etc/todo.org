@@ -1,46 +1,45 @@
-* TODO open mpi
+* DONE open mpi
 ** DONE research non-blocking receive & refactor 'Messenger::receiveWithTag'
 ** DONE research thread safety of all used MPI commands
-** TODO research whether Open MPI truly supports overwritting published names
-* TODO code design
-** TODO rename every 'command' variable to 'data'
-** TODO restrict instantiation of 'Node's to one per process
-* TODO leader election
+** DONE research whether Open MPI truly supports overwritting published names
+* DONE code design
+** DONE rename every 'command' variable to 'data'
+* DONE leader election
 ** DONE comment the bully algorithm
-** TODO research for the condition in which bully algorithm produces two leaders
-** TODO refactor for multithreading
-* TODO paxos
+** DONE refactor for multithreading
+* DONE paxos
 ** DONE set the message unique id in the messenger class
-** TODO refactor for multithreading
-** TODO cleanup code 
-** TODO document
+** DONE refactor for multithreading
+** DONE cleanup code 
+** DONE document
 * TODO server
 ** DONE implement leader port publishing 
 ** DONE implement accept thread
-** TODO implement failure detection heartbeat thread
 ** DONE implement election thread
 ** DONE implement consensus thread
 ** DONE implement REPL thread
 ** DONE implement derived MessageHandler classes for each thread/tag
 ** DONE implement the MessageHandler class
 ** DONE move accept thread spawning in main to Node::create
-** TODO enforce restricting startReceiveLoop to only be called on ReceiverManag.
 ** DONE implement probing blocking call in messenger
 ** DONE make a thread safe function for adding communicator to clientReceivers
-** TODO implement logic for relinquishing leadership upon process recovery
-** TODO in leader election add call to enableClientCommunication
+** DONE in leader election add call to enableClientCommunication
 ** DONE start a leader election instead of setting the leader upon startup
-** TODO change the isUp assignement to use getCode instead of getCodeInt for all
-** TODO give complete ownership of receiver to the receiver manager
+** TODO [#A] implement failure detection heartbeat thread
+** TODO [#A] implement logic for relinquishing leadership upon process recovery
+** TODO [#C] give complete ownership of receiver to the receiver manager
 * TODO messenger
-** TODO change blocking Send to non-blocking Isend
 ** DONE change the 'cluster size' and rank getter to return the values
-** TODO improve visibility of the clusterSize in 'node' and 'messenger'
+** TODO [#A] change blocking Send to non-blocking Isend
 * TODO client
-** TODO implement random command generation
 ** DONE implement server communication
-** TODO have an repl-msg file for each client and specify their ids through args
+** TODO [#B] implement the random command generation script
+** TODO [#B] implement reading and sending the commands in the command file
+** TODO [#B] create a client-repl directory for the client's repl files
+** TODO [#B] create a client-command directory for the client's random command files
 * TODO doc
-** TODO why repl messaging is done through a file
-** TODO why the repl-manager is passed to all other managers
-** TODO why the accept thread is not an accept-manager
+** TODO [#C] document header functions
+** TODO [#C] why repl messaging is done through a file
+** TODO [#C] why the repl-manager is passed to all other managers
+** TODO [#C] why the accept thread is not an accept-manager
+** TODO [#C] why the system relies on published port overwriting for client comm

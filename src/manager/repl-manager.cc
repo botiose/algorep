@@ -12,6 +12,9 @@
 
 #define LOOP_SLEEP_DURATION 100
 
+#define SLOW_SPEED_DURATION 1000
+#define MEDIUM_SPEED_DURATION 500
+
 ReplManager::ReplManager(Messenger& messenger,
                          std::shared_ptr<ReceiverManager> receiverManager)
     : MessageReceiver(messenger, managedTag, receiverManager) {
@@ -27,27 +30,35 @@ ReplManager::handleMessage(const int& srcNodeId,
 
   switch (code) {
   case ReplCode::START: {
-    m_hasStarted = true;
+    std::cout << "start" << std::endl; 
+    m_shouldBlock = false;
+    m_blockConditional.notify_all();
     break;
   }
   case ReplCode::SPEED_LOW: {
+    std::cout << "speed low" << std::endl; 
     m_speed = ReplCode::SPEED_LOW;
     break;
   }
   case ReplCode::SPEED_MEDIUM: {
+    std::cout << "speed medium" << std::endl; 
     m_speed = ReplCode::SPEED_MEDIUM;
     break;
   }
   case ReplCode::SPEED_HIGH: {
+    std::cout << "speed high" << std::endl; 
     m_speed = ReplCode::SPEED_HIGH;
     break;
   }
   case ReplCode::CRASH: {
-    m_hasCrashed = true;
+    std::cout << "speed crash" << std::endl; 
+    m_shouldBlock = true;
     break;
   }
   case ReplCode::RECOVER: {
-    m_hasCrashed = false;
+    std::cout << "speed recover" << std::endl; 
+    m_shouldBlock = false;
+    m_blockConditional.notify_all();
     break;
   }
   }
@@ -68,7 +79,7 @@ parseLine(const std::string& line,
   if (line.empty() == false) {
     size_t delimiterPos = line.find(",");
     bool delimiterFound = delimiterPos != std::string::npos;
-    if (delimiterFound == true || line == "shutdown") {
+    if (delimiterFound == true || line == "shutdown" || line == "start") {
       std::string codeStr;
 
       if (delimiterFound == true) {
@@ -140,23 +151,23 @@ ReplManager::startReceiver() {
   m_receiverManager->stopReceiver(MessageTag::FAILURE_DETECTION);
 }
 
-bool
-ReplManager::hasStarted() {
+void
+ReplManager::sleep() {
   std::unique_lock<std::mutex> lock(m_mutex);
 
-  return m_hasStarted;
-}
+  if (m_shouldBlock == true) {
+    m_blockConditional.wait(lock, [&] { return m_shouldBlock == false; });
+  }
 
-bool
-ReplManager::hasCrashed() {
-  std::unique_lock<std::mutex> lock(m_mutex);
-
-  return m_hasCrashed;
-}
-
-ReplCode
-ReplManager::getSpeed() {
-  std::unique_lock<std::mutex> lock(m_mutex);
-
-  return m_speed;
+  switch (m_speed) {
+  case ReplCode::SPEED_LOW: {
+    std::this_thread::sleep_for(std::chrono::milliseconds(SLOW_SPEED_DURATION));
+    break;
+  }
+  case ReplCode::SPEED_MEDIUM: {
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(MEDIUM_SPEED_DURATION));
+    break;
+  }
+  }
 }

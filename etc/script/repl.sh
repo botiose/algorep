@@ -18,7 +18,7 @@ while [ $isUp -eq 0 ]; do
 
     command=$(cut -d',' -f2 <<< "$line")
 
-    echo "$line" > "$1"
+    echo "$line" >> "$1"
     
     $(test "$command" != "shutdown")
     isUp=$?

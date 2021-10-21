@@ -150,7 +150,7 @@ shutdownNeighbor(const Messenger& messenger,
 
   int nodeId = messenger.getRank();
   int clusterSize = messenger.getClusterSize();
-    
+
   if (electionManager->getLeaderNodeId() != (nodeId + 1) % clusterSize) {
     Messenger::Connection connection;
     messenger.connect(nextNodePort, connection);
@@ -174,8 +174,13 @@ ClientManager::startReceiver() {
                                    std::ref(m_clientConnections),
                                    std::ref(m_connectionMutex));
 
+  std::shared_ptr<ReplManager> replManager =
+      m_receiverManager->getReceiver<ReplManager>();
+
   bool isUp = true;
   while (isUp == true) {
+    replManager->sleep();
+
     this->receivePendingMessages(isUp);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
@@ -192,7 +197,6 @@ void
 ClientManager::enableClientConn() {
   m_messenger.publishPort(m_port);
 }
-
 
 void
 ClientManager::disableClientConn() {

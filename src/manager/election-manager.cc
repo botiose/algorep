@@ -7,8 +7,8 @@
 #include "message-info.hh"
 #include "receiver-manager.hh"
 
-#define ELECTION_WAIT_DURATION 60
-#define VICTORY_WAIT_DURATION 20
+#define ELECTION_WAIT_DURATION 3
+#define VICTORY_WAIT_DURATION 60
 #define LOOP_SLEEP_DURATION 1000
 
 void
@@ -31,6 +31,40 @@ declareVictory(const Messenger& messenger,
 
   gotVictor = true;
   victorNodeId = nodeId;
+}
+
+void
+waitForVictory(const Messenger& messenger, bool& gotVictor, int& victorNodeId) {
+
+  using namespace std::chrono;
+  auto start = high_resolution_clock::now();
+  auto cur = high_resolution_clock::now();
+  int elapsed = 0;
+  bool messageReceived = false;
+
+  while ((messageReceived == false) && (elapsed < VICTORY_WAIT_DURATION)) {
+    int srcNodeId;
+    Message receivedMessage;
+    messenger.receiveWithTag(MessageTag::LEADER_ELECTION,
+                             messageReceived,
+                             srcNodeId,
+                             receivedMessage);
+    if (messageReceived == true) {
+      LeaderElectionCode messageCode =
+          receivedMessage.getCode<LeaderElectionCode>();
+
+      switch (messageCode) {
+      case LeaderElectionCode::VICTORY: {
+        victorNodeId = srcNodeId;
+        gotVictor = true;
+        break;
+      }
+      }
+    }
+
+    cur = high_resolution_clock::now();
+    elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
+  }
 }
 
 void
@@ -60,16 +94,19 @@ busyLeaderElectionWait(const Messenger& messenger,
 
       switch (messageCode) {
       case LeaderElectionCode::ALIVE: {
+        std::cout << "alive: from: " << srcNodeId << " on: " << nodeId << std::endl; 
         // If the current process receives an Answer from a process with a
         // higher ID, it sends no further messages for this election and waits
         // for a Victory message. (If there is no Victory message after a period
         // of time, it restarts the process at the beginning.)
-        busyLeaderElectionWait(messenger,
-                               nodeId,
-                               clusterSize,
-                               VICTORY_WAIT_DURATION,
-                               gotVictor,
-                               victorNodeId);
+        // busyLeaderElectionWait(messenger,
+        //                        nodeId,
+        //                        clusterSize,
+        //                        VICTORY_WAIT_DURATION,
+        //                        gotVictor,
+        //                        victorNodeId);
+
+        waitForVictory(messenger, gotVictor, victorNodeId);
         break;
       }
       case LeaderElectionCode::ELECTION: {
@@ -170,7 +207,7 @@ ElectionManager::handleMessage(const int& srcNodeId,
     }
 
     if (srcNodeId <= nodeId) {
-      startElection();
+      this->startElection();
     }
     break;
   }

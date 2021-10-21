@@ -46,7 +46,6 @@ public:
   getLeaderNodeId() const;
 
 private:
-
   void
   startElection();
 

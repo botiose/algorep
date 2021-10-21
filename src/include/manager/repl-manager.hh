@@ -2,6 +2,7 @@
 
 #include <mutex>
 #include <memory>
+#include <condition_variable>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
@@ -22,18 +23,12 @@ public:
                 const Messenger::Connection& connection = {
                     MPI_COMM_WORLD}) final;
 
-  bool
-  hasStarted();
-
-  bool
-  hasCrashed();
-
-  ReplCode
-  getSpeed();
+  void
+  sleep();
 private:
   std::mutex m_mutex;
+  std::condition_variable m_blockConditional;
 
-  bool m_hasStarted = false;
-  bool m_hasCrashed = false;
+  bool m_shouldBlock = true;
   ReplCode m_speed = ReplCode::SPEED_HIGH;
 };

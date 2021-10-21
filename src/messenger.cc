@@ -173,7 +173,7 @@ Messenger::publishPort(const std::string& port) const {
 
   MPI_Publish_name(SERVER_NAME, scopeInfo, port.c_str());
 
-  std::cout << "messenger pusblished" << std::endl;
+  std::cout << "messenger pusblished: " << m_rank << std::endl;
 }
 
 void

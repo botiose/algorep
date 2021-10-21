@@ -1,6 +1,9 @@
 #include <iostream>
+#include <thread>
 
 #include "message-receiver.hh"
+#include "repl-manager.hh"
+#include "receiver-manager.hh"
 
 MessageReceiver::MessageReceiver(
     Messenger& messenger,
@@ -11,8 +14,13 @@ MessageReceiver::MessageReceiver(
 
 void
 MessageReceiver::startReceiver() {
+  std::shared_ptr<ReplManager> replManager =
+      m_receiverManager->getReceiver<ReplManager>();
+
   bool isUp = true;
   while (isUp == true) {
+    replManager->sleep();
+
     int srcNodeId;
     Message receivedMessage;
 

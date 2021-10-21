@@ -17,7 +17,7 @@ Node::init(int argc, char** argv) {
 
   // TODO give ownership to the receiver manager
   std::shared_ptr<ReplManager> replManager =
-    std::make_shared<ReplManager>(m_messenger, m_receiverManager);
+      std::make_shared<ReplManager>(m_messenger, m_receiverManager);
   std::shared_ptr<ElectionManager> electionManager =
       std::make_shared<ElectionManager>(m_messenger, m_receiverManager);
   std::shared_ptr<ConsensusManager> consensusManager =
@@ -25,7 +25,7 @@ Node::init(int argc, char** argv) {
   std::shared_ptr<FailureManager> failureManager =
       std::make_shared<FailureManager>(m_messenger, m_receiverManager);
   std::shared_ptr<ClientManager> clientManager =
-    std::make_shared<ClientManager>(m_messenger, m_receiverManager);
+      std::make_shared<ClientManager>(m_messenger, m_receiverManager);
 
   m_receiverManager->startReceiver(replManager);
   m_receiverManager->startReceiver(electionManager);
@@ -33,11 +33,11 @@ Node::init(int argc, char** argv) {
   m_receiverManager->startReceiver(failureManager);
   m_receiverManager->startReceiver(clientManager);
 
-  // TODO: start: move this to the election manager 
+  // TODO: start: move this to the election manager
   electionManager->triggerElection();
   electionManager->waitForVictor();
   // TODO: stop
-  
+
   m_receiverManager->waitForReceiver(MessageTag::REPL);
   m_receiverManager->waitForReceiver(MessageTag::LEADER_ELECTION);
   m_receiverManager->waitForReceiver(MessageTag::CONSENSUS);

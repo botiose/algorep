@@ -167,6 +167,8 @@ Messenger::closePort(const std::string& port) const {
 
 void
 Messenger::publishPort(const std::string& port) const {
+  // TODO check if already published
+ 
   MPI_Info scopeInfo;
   MPI_Info_create(&scopeInfo);
   MPI_Info_set(scopeInfo, "ompi_global_scope", "true");

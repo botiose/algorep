@@ -30,33 +30,27 @@ ReplManager::handleMessage(const int& srcNodeId,
 
   switch (code) {
   case ReplCode::START: {
-    std::cout << "start" << std::endl; 
     m_shouldBlock = false;
     m_blockConditional.notify_all();
     break;
   }
   case ReplCode::SPEED_LOW: {
-    std::cout << "speed low" << std::endl; 
     m_speed = ReplCode::SPEED_LOW;
     break;
   }
   case ReplCode::SPEED_MEDIUM: {
-    std::cout << "speed medium" << std::endl; 
     m_speed = ReplCode::SPEED_MEDIUM;
     break;
   }
   case ReplCode::SPEED_HIGH: {
-    std::cout << "speed high" << std::endl; 
     m_speed = ReplCode::SPEED_HIGH;
     break;
   }
   case ReplCode::CRASH: {
-    std::cout << "speed crash" << std::endl; 
     m_shouldBlock = true;
     break;
   }
   case ReplCode::RECOVER: {
-    std::cout << "speed recover" << std::endl; 
     m_shouldBlock = false;
     m_blockConditional.notify_all();
     break;

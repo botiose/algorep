@@ -1,6 +1,7 @@
 #pragma once
 
 #include <mutex>
+#include <chrono>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
@@ -45,9 +46,14 @@ public:
   int
   getLeaderNodeId() const;
 
-private:
   void
   startElection();
 
+private:
+  std::mutex m_mutex;
+
   int m_leaderNodeId = -1;
+  bool m_aliveReceived = false;
+
+  std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
 };

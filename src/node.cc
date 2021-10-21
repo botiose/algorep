@@ -33,10 +33,10 @@ Node::init(int argc, char** argv) {
   m_receiverManager->startReceiver(failureManager);
   m_receiverManager->startReceiver(clientManager);
 
-  // TODO: start: move this to the election manager
-  electionManager->triggerElection();
+  replManager->sleep();
+
+  electionManager->startElection();
   electionManager->waitForVictor();
-  // TODO: stop
 
   m_receiverManager->waitForReceiver(MessageTag::REPL);
   m_receiverManager->waitForReceiver(MessageTag::LEADER_ELECTION);

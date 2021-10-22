@@ -3,6 +3,7 @@
 #include <mutex>
 #include <memory>
 #include <condition_variable>
+#include <string>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
@@ -12,7 +13,8 @@ public:
   inline static MessageTag managedTag = MessageTag::REPL;
 
   ReplManager(Messenger& messenger,
-              std::shared_ptr<ReceiverManager> receiverManager);
+              std::shared_ptr<ReceiverManager> receiverManager, 
+              const std::string& replFilePath);
 
   void
   startReceiver() final;
@@ -26,6 +28,8 @@ public:
   void
   sleep();
 private:
+  std::string m_replFilePath;
+
   std::mutex m_mutex;
   std::condition_variable m_blockConditional;
 

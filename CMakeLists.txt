@@ -22,6 +22,9 @@ set(SERVER_SRC
   )
 
 set(CLIENT_COMMON_SRC
+  src/message-receiver.cc
+  src/receiver-manager.cc
+  src/manager/repl-manager.cc
   src/client.cc
   src/messenger.cc
   src/message.cc
@@ -89,8 +92,13 @@ add_custom_target(etc-link
   exit 0
   )
 
-add_custom_target(clear-repl
-  > etc/repl-msg.txt
+add_custom_target(clear-repl-client
+  rm -rf etc/client/*
+  DEPENDS etc-link
+  )
+
+add_custom_target(clear-repl-server
+  > etc/server/repl.txt
   DEPENDS etc-link
   )
 
@@ -99,7 +107,7 @@ add_custom_target(run-client
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-clients.sh
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS client crosscompile-client etc-link clear-repl
+  DEPENDS client crosscompile-client etc-link clear-repl-client
   )
 
 # SERVER RUN TARGET
@@ -107,7 +115,23 @@ add_custom_target(run-server
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-server.sh
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS server crosscompile-server etc-link clear-repl shutdown-client
+  DEPENDS server crosscompile-server etc-link shutdown-client clear-repl-server
+  )
+
+# SERVER REPL TARGET
+add_custom_target(repl-server
+  COMMAND printf %35sREPL:SERVER%34s\\\\n | tr " " "="
+  COMMAND ./etc/script/server-repl.sh
+  COMMAND printf %80s\\\\n | tr " " "="
+  DEPENDS etc-link
+  )
+
+# SERVER REPL TARGET
+add_custom_target(repl-client
+  COMMAND printf %35sREPL:CLIENT%34s\\\\n | tr " " "="
+  COMMAND ./etc/script/client-repl.sh
+  COMMAND printf %80s\\\\n | tr " " "="
+  DEPENDS etc-link
   )
 
 add_subdirectory(test EXCLUDE_FROM_ALL)

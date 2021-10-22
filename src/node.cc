@@ -7,7 +7,7 @@
 #include "failure-manager.hh"
 #include "client-manager.hh"
 
-// TODO move accept logic to a given namespace
+#define REPL_MSG_FILEPATH "etc/server/repl.txt"
 
 void
 Node::init(int argc, char** argv) {
@@ -15,9 +15,8 @@ Node::init(int argc, char** argv) {
 
   m_receiverManager = std::make_shared<ReceiverManager>();
 
-  // TODO give ownership to the receiver manager
-  std::shared_ptr<ReplManager> replManager =
-      std::make_shared<ReplManager>(m_messenger, m_receiverManager);
+  std::shared_ptr<ReplManager> replManager = std::make_shared<ReplManager>(
+      m_messenger, m_receiverManager, REPL_MSG_FILEPATH);
   std::shared_ptr<ElectionManager> electionManager =
       std::make_shared<ElectionManager>(m_messenger, m_receiverManager);
   std::shared_ptr<ConsensusManager> consensusManager =

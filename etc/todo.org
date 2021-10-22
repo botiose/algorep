@@ -26,17 +26,19 @@
 ** DONE in leader election add call to enableClientCommunication
 ** DONE start a leader election instead of setting the leader upon startup
 ** TODO [#A] implement failure detection heartbeat thread
-** TODO [#A] implement logic for relinquishing leadership upon process recovery
 ** TODO [#C] give complete ownership of receiver to the receiver manager
 * TODO messenger
 ** DONE change the 'cluster size' and rank getter to return the values
+** TODO [#A] implement published port checking in the messenger
 ** TODO [#A] change blocking Send to non-blocking Isend
-* TODO client
+* DONE client
 ** DONE implement server communication
-** TODO [#B] implement the random command generation script
-** TODO [#B] implement reading and sending the commands in the command file
-** TODO [#B] create a client-repl directory for the client's repl files
-** TODO [#B] create a client-command directory for the client's random command files
+** DONE [#B] implement the random command generation script
+** DONE [#B] implement reading and sending the commands in the command file
+** DONE [#B] create a client-repl directory for the client's repl files
+** DONE [#B] create a client-command directory for the client's random command files
+** DONE handle repl shutdown in the client
+** DONE set client speed sleep
 * TODO doc
 ** TODO [#C] document header functions
 ** TODO [#C] why repl messaging is done through a file

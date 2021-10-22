@@ -7,6 +7,8 @@ ReceiverManager::startReceiver(std::shared_ptr<T> receiver) {
 
   m_threads[receiverIndex] =
       std::thread(&MessageReceiver::startReceiver, m_receivers[receiverIndex]);
+
+  m_isActive[receiverIndex] = true;
 }
 
 template <typename T>

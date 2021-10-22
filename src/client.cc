@@ -1,11 +1,28 @@
 #include <chrono>
 #include <thread>
 #include <json.hpp>
+#include <fstream>
 
 #include "client.hh"
+#include "repl-manager.hh"
 
 #define RESPONSE_WAIT_DURATION 60
 #define LOOP_SLEEP_DURATION 50
+
+#define REPL_MSG_BASE_FILEPATH "etc/client/"
+#define REPL_FILE "repl.txt"
+#define COMMAND_FILE "command.txt"
+
+void
+connectMessenger(Messenger& messenger,
+                 Messenger::Connection& serverConnection,
+                 int& argc,
+                 char* argv[]) {
+  std::string port;
+  messenger.lookupServerPort(port);
+
+  messenger.connect(port, serverConnection);
+}
 
 void
 Client::connect(int argc, char* argv[]) {
@@ -13,10 +30,23 @@ Client::connect(int argc, char* argv[]) {
   int clusterSize;
   m_messenger.start(argc, argv, rank, clusterSize);
 
-  std::string port;
-  m_messenger.lookupServerPort(port);
+  m_receiverManager = std::make_shared<ReceiverManager>();
 
-  m_messenger.connect(port, m_serverConnection);
+  m_baseDir = REPL_MSG_BASE_FILEPATH;
+  m_baseDir.append(argv[1]);
+  m_baseDir.append("/");
+
+  std::string replFilePath(m_baseDir);
+  replFilePath.append(REPL_FILE);
+
+  std::shared_ptr<ReplManager> replManager = std::make_shared<ReplManager>(
+      m_messenger, m_receiverManager, replFilePath);
+
+  m_receiverManager->startReceiver(replManager);
+
+  replManager->sleep();
+
+  connectMessenger(m_messenger, m_serverConnection, argc, argv);
 
   Message message;
   m_messenger.setMessage(ClientCode::CONNECT, message);
@@ -26,14 +56,13 @@ Client::connect(int argc, char* argv[]) {
 
 void
 Client::shutdownServer(int argc, char* argv[]) {
+  m_receiverManager = std::make_shared<ReceiverManager>();
+
   int rank;
   int clusterSize;
   m_messenger.start(argc, argv, rank, clusterSize);
 
-  std::string port;
-  m_messenger.lookupServerPort(port);
-
-  m_messenger.connect(port, m_serverConnection);
+  connectMessenger(m_messenger, m_serverConnection, argc, argv);
 
   Message message;
   m_messenger.setMessage(ClientCode::SHUTDOWN, message);
@@ -43,7 +72,9 @@ Client::shutdownServer(int argc, char* argv[]) {
 }
 
 void
-Client::replicate(const std::string& data) const {
+replicate(const Messenger& messenger,
+                  const Messenger::Connection serverConnection,
+                  const std::string& data) {
   bool replicated = false;
   while (replicated == false) {
     Message message;
@@ -51,9 +82,9 @@ Client::replicate(const std::string& data) const {
 
     std::string dataJsonString = dataJson.dump();
 
-    m_messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
+    messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
 
-    m_messenger.send(0, message, m_serverConnection);
+    messenger.send(0, message, serverConnection);
 
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
@@ -64,11 +95,11 @@ Client::replicate(const std::string& data) const {
     Message responseMessage;
     while ((messageReceived == false) && (elapsed < RESPONSE_WAIT_DURATION)) {
       int srcNodeId;
-      m_messenger.receiveWithTag(MessageTag::CLIENT,
+      messenger.receiveWithTag(MessageTag::CLIENT,
                                  messageReceived,
                                  srcNodeId,
                                  responseMessage,
-                                 m_serverConnection);
+                                 serverConnection);
 
       std::this_thread::sleep_for(
           std::chrono::milliseconds(LOOP_SLEEP_DURATION));
@@ -90,5 +121,29 @@ Client::disconnect() {
 
   m_messenger.disconnect(m_serverConnection);
 
+  m_receiverManager->waitForReceiver(MessageTag::REPL);
+
   m_messenger.stop();
+}
+
+void
+Client::replicateCommands() {
+  std::string commandFilePath(m_baseDir);
+  commandFilePath.append(COMMAND_FILE);
+
+  std::ifstream ifs(commandFilePath);
+
+  std::shared_ptr<ReplManager> replManager =
+      m_receiverManager->getReceiver<ReplManager>();
+
+  std::string line;
+
+  do {
+    std::getline(ifs, line);
+    replicate(m_messenger, m_serverConnection, line);
+
+    replManager->sleep();    
+  } while (line.empty() == false);
+
+  ifs.close();
 }

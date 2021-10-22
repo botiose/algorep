@@ -8,16 +8,16 @@
 #include "repl-manager.hh"
 #include "receiver-manager.hh"
 
-#define REPL_MSG_FILEPATH "etc/repl-msg.txt"
-
 #define LOOP_SLEEP_DURATION 100
 
 #define SLOW_SPEED_DURATION 1000
 #define MEDIUM_SPEED_DURATION 500
 
 ReplManager::ReplManager(Messenger& messenger,
-                         std::shared_ptr<ReceiverManager> receiverManager)
-    : MessageReceiver(messenger, managedTag, receiverManager) {
+                         std::shared_ptr<ReceiverManager> receiverManager,
+                         const std::string& replFilePath)
+    : MessageReceiver(messenger, managedTag, receiverManager),
+      m_replFilePath(replFilePath) {
 }
 
 void
@@ -84,7 +84,7 @@ parseLine(const std::string& line,
         dstNodeId = messenger.getRank();
         codeStr = line;
       }
-
+      
       if (0 <= dstNodeId && dstNodeId < messenger.getClusterSize()) {
         auto codeIte = replParseMap.find(codeStr);
 
@@ -107,15 +107,13 @@ fetchMessageFromFile(std::ifstream& ifs,
                      int& dstNodeId) {
   std::string line;
   getTrailingLine(ifs, line);
-
+  
   parseLine(line, messenger, receivedMessage, messageReceived, dstNodeId);
 }
 
 void
 ReplManager::startReceiver() {
-  std::ifstream ifs(REPL_MSG_FILEPATH);
-
-  // TODO check file validity
+  std::ifstream ifs(m_replFilePath);
 
   bool isUp = true;
   while (isUp == true) {

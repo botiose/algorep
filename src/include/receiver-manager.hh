@@ -34,6 +34,7 @@ private:
              static_cast<int>(MessageTag::SIZE)>
       m_receivers;
   std::array<std::thread, static_cast<int>(MessageTag::SIZE)> m_threads;
+  std::array<bool, static_cast<int>(MessageTag::SIZE)> m_isActive = {false};
 };
 
 #include "receiver-manager.hxx"

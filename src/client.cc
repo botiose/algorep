@@ -138,12 +138,19 @@ Client::replicateCommands() {
 
   std::string line;
 
+  bool doneReading;
+
   do {
     std::getline(ifs, line);
-    replicate(m_messenger, m_serverConnection, line);
 
-    replManager->sleep();    
-  } while (line.empty() == false);
+    doneReading = line.empty();
+
+    if (doneReading == false) {
+      replicate(m_messenger, m_serverConnection, line);
+
+      replManager->sleep();
+    }
+  } while (doneReading == false);
 
   ifs.close();
 }

@@ -3,11 +3,15 @@
 #include <optional>
 #include <iostream>
 #include <json.hpp>
+#include <cstdio>
+#include <fstream>
 
 #include "consensus-manager.hh"
 
 #define PROMISE_WAIT_DURATION 3
 #define ACCEPT_WAIT_DURATION 5
+
+#define LOG_BASE_DIR "etc/server/log/"
 
 ConsensusManager::ConsensusManager(
     Messenger& messenger,
@@ -174,9 +178,7 @@ ConsensusManager::startConsensus(const Messenger& messenger,
       receiveAccepts(messenger, clusterSize, roundId, majorityAccepted);
 
       if (majorityAccepted == true) {
-
-        std::cout << "consensus reached" << std::endl; 
-        // TODO broadcastAccepted();
+        broadcastAccepted(messenger, clusterSize, roundId, value);
 
         consensusReached = true;
       }
@@ -243,8 +245,27 @@ handleProposeMessage(const Messenger& messenger,
 }
 
 void
-handleAcceptedMessage() {
-  // TODO log value
+handleAcceptedMessage(const Messenger& messenger,
+                      const Message& receivedMessage) {
+  // TODO check round id
+  char logFile[4];
+  std::sprintf(logFile, "%02d.txt", messenger.getRank());
+  
+  std::string logFilePath(LOG_BASE_DIR);
+  logFilePath.append(logFile);
+
+  std::ofstream ofs(logFilePath, std::ios_base::app);
+
+  const std::string& messageData = receivedMessage.getData();
+  nlohmann::json messageJson = nlohmann::json::parse(messageData);
+
+  std::string value = messageJson.at("value");
+
+  std::cout << value << std::endl; 
+
+  ofs << value << std::endl;
+
+  ofs.close();
 }
 
 void
@@ -265,7 +286,7 @@ ConsensusManager::handleMessage(const int& srcNodeId,
     break;
   }
   case ConsensusCode::ACCEPTED: {
-    handleAcceptedMessage();
+    handleAcceptedMessage(m_messenger, receivedMessage);
     break;
   }
   }

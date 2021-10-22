@@ -65,7 +65,6 @@ ClientManager::receivePendingMessages(bool& isUp) {
     if (messageReceived == true) {
       // message code 0 is SHUTDOWN for all message tags
       isUp = receivedMessage.getCodeInt() != 0;
-
       if (isUp == true) {
         if (receivedMessage.getCode<ClientCode>() != ClientCode::DISCONNECT) {
           this->handleMessage(srcNodeId, receivedMessage, *connection);
@@ -107,14 +106,17 @@ acceptConnection(Messenger& messenger,
 
 void
 sendPort(const Messenger& messenger, const std::string& port) {
-  int nextNodeId = (messenger.getRank() + 1) % messenger.getClusterSize();
+  int nodeId = messenger.getRank();
+  int clusterSize = messenger.getClusterSize();
+
+  int prevNodeId = nodeId == 0 ? clusterSize - 1: nodeId - 1; 
 
   nlohmann::json messageJson = {{"port", port}};
   std::string messageString = messageJson.dump();
   Message message;
   messenger.setMessage(ClientCode::PORT, messageString, message);
 
-  messenger.send(nextNodeId, message);
+  messenger.send(prevNodeId, message);
 }
 
 void

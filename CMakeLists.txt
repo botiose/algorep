@@ -99,6 +99,7 @@ add_custom_target(clear-repl-client
 
 add_custom_target(clear-repl-server
   > etc/server/repl.txt
+  rm -rf etc/server/log && mkdir etc/server/log
   DEPENDS etc-link
   )
 
@@ -106,6 +107,7 @@ add_custom_target(clear-repl-server
 add_custom_target(run-client
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-clients.sh
+  COMMAND tail -f etc/client/00/repl.txt | sed '/shutdown/ q' > /dev/null
   COMMAND printf %80s\\\\n | tr " " "="
   DEPENDS client crosscompile-client etc-link clear-repl-client
   )

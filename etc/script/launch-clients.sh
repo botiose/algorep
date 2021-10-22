@@ -29,15 +29,14 @@ for archs in $(jq -rc ".nodes | to_entries[]" <<< "$config"); do
         projectPath=$(jq -rc ".projectPath" <<< "$node")
 
         for i in $(seq $coreCount); do
-
             clientDir="$(printf "%02d\n" $clientId)"
 
-            mkdir ../../etc/client/"$clientDir" &&
-                touch ../../etc/client/"$clientDir"/repl.txt &&
-                ./../../etc/script/gen-commands.sh ../../etc/client/"$clientDir"/command.txt &&
+            mkdir ../../etc/client/"$clientDir"
+            touch ../../etc/client/"$clientDir"/repl.txt
+            ./../../etc/script/gen-commands.sh ../../etc/client/"$clientDir"/command.txt
             
             if [ "$address" == "localhost" ]; then
-                mpirun --ompi-server file:../../etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir"
+                mpirun --ompi-server file:../../etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir" &
             else
                 ssh "$address" "cd $projectPath && mpirun --ompi-server file:etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir""
             fi

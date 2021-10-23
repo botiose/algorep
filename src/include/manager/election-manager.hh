@@ -7,18 +7,14 @@
 #include "messenger.hh"
 #include "repl-manager.hh"
 
+using timePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+
 class ElectionManager : public MessageReceiver {
 public:
   inline static MessageTag managedTag = MessageTag::LEADER_ELECTION;
 
   ElectionManager(Messenger& messenger,
                   std::shared_ptr<ReceiverManager> receiverManager);
-
-  void
-  triggerElection();
-
-  void
-  waitForVictor();
 
   /**
    * @brief Handles messages tagged for leader election.
@@ -44,10 +40,13 @@ public:
 
   // thread safety left to the user
   int
-  getLeaderNodeId() const;
+  getLeaderNodeId();
 
   void
   startElection();
+
+  void
+  init() final;
 
 private:
   std::mutex m_mutex;
@@ -55,5 +54,5 @@ private:
   int m_leaderNodeId = -1;
   bool m_aliveReceived = false;
 
-  std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+  timePoint m_start;
 };

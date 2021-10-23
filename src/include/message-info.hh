@@ -24,7 +24,7 @@ enum class ConsensusCode {
   SIZE
 };
 
-enum class FailDetectionCode { SHUTDOWN, SIZE };
+enum class FailureCode { SHUTDOWN, PING, SIZE };
 
 enum class ClientCode {
   SHUTDOWN,
@@ -53,8 +53,8 @@ static std::unordered_map<std::string, ReplCode> const replParseMap = {
     {"speed-low", ReplCode::SPEED_LOW},
     {"speed-medium", ReplCode::SPEED_MEDIUM},
     {"speed-high", ReplCode::SPEED_HIGH},
-    {"speed-crash", ReplCode::CRASH},
-    {"speed-recover", ReplCode::RECOVER}};
+    {"crash", ReplCode::CRASH},
+    {"recover", ReplCode::RECOVER}};
 
 template <typename T>
 MessageTag

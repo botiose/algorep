@@ -32,11 +32,6 @@ Node::init(int argc, char** argv) {
   m_receiverManager->startReceiver(failureManager);
   m_receiverManager->startReceiver(clientManager);
 
-  replManager->sleep();
-
-  electionManager->startElection();
-  electionManager->waitForVictor();
-
   m_receiverManager->waitForReceiver(MessageTag::REPL);
   m_receiverManager->waitForReceiver(MessageTag::LEADER_ELECTION);
   m_receiverManager->waitForReceiver(MessageTag::CONSENSUS);

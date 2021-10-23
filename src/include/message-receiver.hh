@@ -21,9 +21,12 @@ public:
                 const Messenger::Connection& connection = {MPI_COMM_WORLD}) = 0;
 
   virtual void
-  stopReceiver() {};
+  stopReceiver(){};
 
 protected:
+  virtual void
+  init(){};
+
   std::shared_ptr<ReceiverManager> m_receiverManager;
 
   Messenger& m_messenger;

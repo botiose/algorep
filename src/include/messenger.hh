@@ -13,6 +13,8 @@
 
 #include <mpi.h>
 #include <string>
+#include <vector>
+#include <mutex>
 
 #include "message.hh"
 #include "message-info.hh"
@@ -176,6 +178,9 @@ public:
   void
   disconnect(Connection& connection) const;
 
+  void
+  setNodeStatus(const int& nodeId, const bool& isAlive);
+
 private:
   void
   generateUniqueId(const int& nodeId, int& id) const;
@@ -183,7 +188,9 @@ private:
   int m_rank; /**< rank of the current process */
   int m_clusterSize;
   bool m_isPublished = false;
-  // char m_port[PORT_STRING_SIZE];
+
+  std::mutex m_mutex;
+  std::vector<bool> m_processIsAlive;
 };
 
 #include "messenger.hxx"

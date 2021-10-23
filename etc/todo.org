@@ -25,12 +25,13 @@
 ** DONE make a thread safe function for adding communicator to clientReceivers
 ** DONE in leader election add call to enableClientCommunication
 ** DONE start a leader election instead of setting the leader upon startup
+** DONE make a virtual 'init' command called before main loop in MessageReceiver
 ** TODO [#A] implement failure detection heartbeat thread
-** TODO [#C] give complete ownership of receiver to the receiver manager
+** TODO [#C] use conditionals in waitForVictor 
 * TODO messenger
 ** DONE change the 'cluster size' and rank getter to return the values
-** TODO [#A] implement published port checking in the messenger
 ** TODO [#A] change blocking Send to non-blocking Isend
+** TODO implement dead node in/out message blocking for non failure tag messages
 * DONE client
 ** DONE implement server communication
 ** DONE [#B] implement the random command generation script

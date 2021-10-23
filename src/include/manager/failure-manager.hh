@@ -1,8 +1,14 @@
 #pragma once
 
+#include <vector>
+#include <chrono>
+#include <thread>
+
 #include "message-receiver.hh"
 #include "messenger.hh"
 #include "repl-manager.hh"
+
+using timePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
 class FailureManager : public MessageReceiver {
 public:
@@ -18,4 +24,15 @@ public:
 
   void
   stopReceiver() final;
+
+private:
+  void
+  init() final;
+
+  std::mutex m_mutex;
+
+  std::thread m_pingThread;
+
+  std::vector<timePoint> m_timeStamps;
+  std::vector<bool> m_isAlive;
 };

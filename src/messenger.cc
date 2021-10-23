@@ -39,19 +39,23 @@ void
 Messenger::send(const int& dstNodeId,
                 const Message& message,
                 const Messenger::Connection& connection) const {
-  assert(message.getIsValid());
+  int nodeStatusIndex = dstNodeId < m_rank ? dstNodeId : dstNodeId - 1;
 
-  std::string messageString;
-  messageString.resize(MAX_MESSAGE_SIZE);
-  serializeMessage(message, messageString);
+  if (m_processIsAlive[nodeStatusIndex] == true) {
+    assert(message.getIsValid());
 
-  int tag = message.getTagInt();
-  MPI_Send(messageString.c_str(),
-           MAX_MESSAGE_SIZE,
-           MPI_CHAR,
-           dstNodeId,
-           tag,
-           connection.connection);
+    std::string messageString;
+    messageString.resize(MAX_MESSAGE_SIZE);
+    serializeMessage(message, messageString);
+
+    int tag = message.getTagInt();
+    MPI_Send(messageString.c_str(),
+             MAX_MESSAGE_SIZE,
+             MPI_CHAR,
+             dstNodeId,
+             tag,
+             connection.connection);
+  }
 }
 
 void
@@ -144,6 +148,12 @@ Messenger::start(int argc, char** argv, int& rank, int& clusterSize) {
 
   MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
   m_clusterSize = clusterSize;
+
+  m_processIsAlive.resize(clusterSize - 1);
+
+  for (int i = 0; i < clusterSize - 1; i++) {
+    m_processIsAlive[i] = true;
+  }
 }
 
 void
@@ -237,4 +247,11 @@ Messenger::getClusterSize() const {
 int
 Messenger::getRank() const {
   return m_rank;
+}
+
+void
+Messenger::setNodeStatus(const int& nodeIndex, const bool& isAlive) {
+  std::unique_lock<std::mutex> lock(m_mutex);
+
+  m_processIsAlive[nodeIndex];
 }

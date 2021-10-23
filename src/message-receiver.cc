@@ -17,10 +17,12 @@ MessageReceiver::startReceiver() {
   std::shared_ptr<ReplManager> replManager =
       m_receiverManager->getReceiver<ReplManager>();
 
+  replManager->sleep();
+
+  this->init();
+
   bool isUp = true;
   while (isUp == true) {
-    replManager->sleep();
-
     int srcNodeId;
     Message receivedMessage;
 
@@ -30,6 +32,9 @@ MessageReceiver::startReceiver() {
     isUp = receivedMessage.getCodeInt() != 0;
 
     if (isUp == true) {
+
+      replManager->sleep();
+
       this->handleMessage(srcNodeId, receivedMessage);
     }
   }

@@ -70,30 +70,27 @@ parseLine(const std::string& line,
           Message& receivedMessage,
           bool& messageReceived,
           int& dstNodeId) {
-  if (line.empty() == false) {
-    size_t delimiterPos = line.find(",");
-    bool delimiterFound = delimiterPos != std::string::npos;
-    if (delimiterFound == true || line == "shutdown" || line == "start") {
-      std::string codeStr;
+  size_t delimiterPos = line.find(",");
+  bool delimiterFound = delimiterPos != std::string::npos;
+  if (delimiterFound == true || line == "shutdown" || line == "start") {
+    std::string codeStr;
 
-      if (delimiterFound == true) {
-        std::string dstNodeIdStr = line.substr(0, delimiterPos);
-        dstNodeId = std::stoi(dstNodeIdStr);
-        codeStr = line.substr(delimiterPos + 1);
-      } else {
-        dstNodeId = messenger.getRank();
-        codeStr = line;
-      }
-      
-      if (0 <= dstNodeId && dstNodeId < messenger.getClusterSize()) {
-        auto codeIte = replParseMap.find(codeStr);
+    if (delimiterFound == true) {
+      std::string dstNodeIdStr = line.substr(0, delimiterPos);
+      dstNodeId = std::stoi(dstNodeIdStr);
+      codeStr = line.substr(delimiterPos + 1);
+    } else {
+      dstNodeId = messenger.getRank();
+      codeStr = line;
+    }
 
-        if (codeIte != replParseMap.end()) {
-          ReplCode code = codeIte->second;
-          messenger.setMessage(code, receivedMessage);
+    if (0 <= dstNodeId && dstNodeId < messenger.getClusterSize()) {
+      auto codeIte = replParseMap.find(codeStr);
 
-          messageReceived = true;
-        }
+      if (codeIte != replParseMap.end()) {
+        ReplCode code = codeIte->second;
+        messenger.setMessage(code, receivedMessage);
+        messageReceived = true;
       }
     }
   }
@@ -107,8 +104,9 @@ fetchMessageFromFile(std::ifstream& ifs,
                      int& dstNodeId) {
   std::string line;
   getTrailingLine(ifs, line);
-  
-  parseLine(line, messenger, receivedMessage, messageReceived, dstNodeId);
+  if (line.empty() == false) {
+    parseLine(line, messenger, receivedMessage, messageReceived, dstNodeId);
+  }
 }
 
 void

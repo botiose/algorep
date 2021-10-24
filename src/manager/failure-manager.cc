@@ -15,7 +15,7 @@ FailureManager::FailureManager(Messenger& messenger,
 }
 
 void
-broadcastPing(const Messenger& messenger) {
+broadcastPing(Messenger& messenger) {
   int nodeId = messenger.getRank();
   int clusterSize = messenger.getClusterSize();
 
@@ -29,18 +29,24 @@ broadcastPing(const Messenger& messenger) {
   }
 }
 
+int
+indexToId(const int& nodeId, const int& index) {
+  return index < nodeId ? index : index + 1;
+}
+
 void
 handleNodeFailure(const int& nodeIndex,
                   Messenger& messenger,
                   std::vector<bool>& isAlive,
                   std::shared_ptr<ReceiverManager>& receiverManager) {
+  std::cout << "failure detected" << std::endl; 
   messenger.setNodeStatus(nodeIndex, false);
 
   int nodeId = messenger.getRank();
   std::shared_ptr<ElectionManager> electionManager =
       receiverManager->getReceiver<ElectionManager>();
 
-  int failedNodeId = nodeIndex < nodeId ? nodeIndex : nodeId + 1;
+  int failedNodeId = indexToId(nodeId, nodeIndex);
 
   if (electionManager->getLeaderNodeId() == failedNodeId) {
     electionManager->startElection();
@@ -53,89 +59,69 @@ void
 handleNodeRecovery(const int& nodeIndex,
                    Messenger& messenger,
                    std::shared_ptr<ReceiverManager>& receiverManager,
-                   int& curRecoveryId,
-                   std::mutex& curRecoveryIdMutex,
-                   bool& blockClientConn,
-                   std::condition_variable& blockClientConnCond,
-                   bool& clientConnBlocked,
-                   std::condition_variable& clientConnBlockedCond,
-                   std::unique_lock<std::mutex>& lock) {
+                   std::unique_lock<std::mutex>& lock,
+                   FailureManager::Context& failureContext) {
   // pause the client manager
-  blockClientConn = true;
-  clientConnBlockedCond.wait(lock, [&] { return clientConnBlocked == false; });
+  failureContext.blockClientConn = true;
+  failureContext.clientConnBlockedCond.wait(
+      lock, [&] { return failureContext.clientConnBlocked == false; });
 
   // TODO read the log and set the data field
+
   Message message;
   messenger.setMessage(FailureCode::STATE, "", message);
 
   {
-    std::unique_lock<std::mutex> lock(curRecoveryIdMutex);
+    std::unique_lock<std::mutex> lock(failureContext.curRecoveryIdMutex);
 
-    curRecoveryId = message.getId();
+    failureContext.curRecoveryId = message.getId();
   }
 
-  int dstNodeId = nodeIndex < messenger.getRank() ? nodeIndex : nodeIndex + 1;
+  int dstNodeId = indexToId(messenger.getRank(), nodeIndex);
   messenger.send(dstNodeId, message);
 
   std::this_thread::sleep_for(std::chrono::seconds(RECOVERY_DURATION));
 
-
   {
-    std::unique_lock<std::mutex> lock(curRecoveryIdMutex);
+    std::unique_lock<std::mutex> lock(failureContext.curRecoveryIdMutex);
 
-    curRecoveryId = -1;
+    failureContext.curRecoveryId = -1;
   }
 
   // unpause the client manager
-  blockClientConn = false;
-  blockClientConnCond.notify_all();
+  failureContext.blockClientConn = false;
+  failureContext.blockClientConnCond.notify_all();
 }
 
 void
 checkTimeStamps(Messenger& messenger,
-                std::mutex& mutex,
-                std::vector<timePoint>& timeStamps,
-                std::vector<bool>& isAlive,
                 std::shared_ptr<ReceiverManager>& receiverManager,
-                int& curRecoveryId,
-                std::mutex& curRecoveryIdMutex,
-                bool& blockClientConn,
-                std::condition_variable& blockClientConnCond,
-                bool& clientConnBlocked,
-                std::condition_variable& clientConnBlockedCond) {
+                FailureManager::Context& failureContext) {
   for (int i = 0; i < messenger.getClusterSize() - 1; i++) {
     {
-      std::unique_lock<std::mutex> lock(mutex);
+      std::unique_lock<std::mutex> lock(failureContext.mutex);
 
-      timePoint lastSeen = timeStamps[i];
+      timePoint lastSeen = failureContext.timeStamps[i];
       auto cur = std::chrono::high_resolution_clock::now();
       int elapsed =
           std::chrono::duration_cast<std::chrono::seconds>(cur - lastSeen)
               .count();
-      
-      // TODO remove
-      int curNodeId = i < messenger.getRank() ? i : i + 1;
-      if (isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
-        std::cout << "failure detected: " << messenger.getRank() << " failed : " << curNodeId << std::endl;
-        handleNodeFailure(i, messenger, isAlive, receiverManager);
-      } else if (isAlive[i] == false && elapsed < TIMEOUT_DURATION) {
+
+      if (failureContext.isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
+        handleNodeFailure(
+            i, messenger, failureContext.isAlive, receiverManager);
+      } else if (failureContext.isAlive[i] == false &&
+                 elapsed < TIMEOUT_DURATION) {
         std::shared_ptr<ElectionManager> electionManager =
-          receiverManager->getReceiver<ElectionManager>();
-        bool noCurrentRecovery = curRecoveryId == -1;
+            receiverManager->getReceiver<ElectionManager>();
+        bool noCurrentRecovery = failureContext.curRecoveryId == -1;
         int leaderNodeId = electionManager->getLeaderNodeId();
         int nodeId = messenger.getRank();
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
-          std::cout << "recovery detected: " << messenger.getRank() << " recovered : " << curNodeId << std::endl;
-          handleNodeRecovery(i,
-                             messenger,
-                             receiverManager,
-                             curRecoveryId,
-                             curRecoveryIdMutex,
-                             blockClientConn,
-                             blockClientConnCond,
-                             clientConnBlocked,
-                             clientConnBlockedCond,
-                             lock);
+
+          // TODO spawn a new thread for this call
+          handleNodeRecovery(
+              i, messenger, receiverManager, lock, failureContext);
         }
       }
     }
@@ -144,16 +130,8 @@ checkTimeStamps(Messenger& messenger,
 
 void
 pingCheck(Messenger& messenger,
-          std::mutex& mutex,
-          std::vector<timePoint>& timeStamps,
-          std::vector<bool>& isAlive,
           std::shared_ptr<ReceiverManager>& receiverManager,
-          int& curRecoveryId,
-          std::mutex& curRecoveryIdMutex,
-          bool& blockClientConn,
-          std::condition_variable& blockClientConnCond,
-          bool& clientConnBlocked,
-          std::condition_variable& clientConnBlockedCond) {
+          FailureManager::Context& failureContext) {
   std::shared_ptr<ReplManager> replManager =
       receiverManager->getReceiver<ReplManager>();
 
@@ -163,17 +141,7 @@ pingCheck(Messenger& messenger,
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
 
-    checkTimeStamps(messenger,
-                    mutex,
-                    timeStamps,
-                    isAlive,
-                    receiverManager,
-                    curRecoveryId,
-                    curRecoveryIdMutex,
-                    blockClientConn,
-                    blockClientConnCond,
-                    clientConnBlocked,
-                    clientConnBlockedCond);
+    checkTimeStamps(messenger, receiverManager, failureContext);
     broadcastPing(messenger);
   }
 }
@@ -182,31 +150,29 @@ void
 FailureManager::init() {
   int n = m_messenger.getClusterSize() - 1;
 
-  m_timeStamps.resize(n);
-  m_isAlive.resize(n);
+  m_context.timeStamps.resize(n);
+  m_context.isAlive.resize(n);
 
   for (int i = 0; i < n; i++) {
-    m_timeStamps[i] = std::chrono::high_resolution_clock::now();
-    m_isAlive[i] = true;
+    m_context.timeStamps[i] = std::chrono::high_resolution_clock::now();
+    m_context.isAlive[i] = true;
   }
 
+  // TODO handle thread shutdown
   std::thread pingThread = std::thread(pingCheck,
                                        std::ref(m_messenger),
-                                       std::ref(m_mutex),
-                                       std::ref(m_timeStamps),
-                                       std::ref(m_isAlive),
                                        std::ref(m_receiverManager),
-                                       std::ref(m_curRecoveryId),
-                                       std::ref(m_curRecoveryIdMutex),
-                                       std::ref(m_blockClientConn),
-                                       std::ref(m_blockClientConnCond),
-                                       std::ref(m_clientConnBlocked),
-                                       std::ref(m_clientConnBlockedCond));
+                                       std::ref(m_context));
   pingThread.detach();
 }
 
+int
+idToIndex(const int& nodeId1, const int& nodeId2) {
+  return nodeId2 < nodeId1 ? nodeId2 : nodeId2 - 1;
+}
+
 void
-broadcastRecovered(const Messenger& messenger, const int& recoveredNodeId) {
+broadcastRecovered(Messenger& messenger, const int& recoveredNodeId) {
   nlohmann::json json = {{"recoveredNodeId", recoveredNodeId}};
   const std::string& jsonString = json.dump();
 
@@ -225,9 +191,7 @@ enableComm(const int& recoveredNodeId,
            Messenger& messenger,
            std::mutex& mutex,
            std::vector<bool>& isAlive) {
-  int nodeId = messenger.getRank();
-  int nodeIndex =
-    recoveredNodeId < nodeId ? recoveredNodeId : recoveredNodeId - 1;
+  int nodeIndex = idToIndex(messenger.getRank(), recoveredNodeId);
 
   messenger.setNodeStatus(nodeIndex, true);
 
@@ -238,81 +202,118 @@ enableComm(const int& recoveredNodeId,
 }
 
 void
+handleStateUpdate(const int& srcNodeId,
+                  const Message& receivedMessage,
+                  Messenger& messenger,
+                  std::mutex& mutex,
+                  std::mutex& curRecoveryIdMutex,
+                  int& curRecoveryId,
+                  std::shared_ptr<ReceiverManager>& receiverManager,
+                  std::vector<bool>& isAlive) {
+  const std::string& messageData = receivedMessage.getData();
+  nlohmann::json json = nlohmann::json::parse(messageData);
+  int recoveryId = json.at("recoveryId");
+  bool correctRecoveryId;
+
+  {
+    std::unique_lock<std::mutex> lock(curRecoveryIdMutex);
+    correctRecoveryId = curRecoveryId == recoveryId;
+  }
+
+  std::shared_ptr<ElectionManager> electionManager =
+      receiverManager->getReceiver<ElectionManager>();
+
+  int nodeId = messenger.getRank();
+  bool amLeader = electionManager->getLeaderNodeId() == nodeId;
+  if (correctRecoveryId == true && amLeader == true) {
+    broadcastRecovered(messenger, srcNodeId);
+
+    enableComm(srcNodeId, messenger, mutex, isAlive);
+  }
+}
+
+void
+handleRecovered(const Message& receivedMessage,
+                Messenger& messenger,
+                std::mutex& mutex,
+                std::vector<timePoint>& timeStamps,
+                std::vector<bool>& isAlive) {
+  const std::string& messageData = receivedMessage.getData();
+  nlohmann::json json = nlohmann::json::parse(messageData);
+  int recoveredNodeId = json.at("recoveredNodeId");
+  int nodeId = messenger.getRank();
+  int nodeIndex = idToIndex(nodeId, recoveredNodeId);
+
+  if (nodeId == recoveredNodeId) {
+    for (int i = 0; i < messenger.getClusterSize() - 1; i++) {
+      timeStamps[i] = std::chrono::high_resolution_clock::now();
+    }
+  } else {
+    enableComm(recoveredNodeId, messenger, mutex, isAlive);
+  }
+}
+
+void
+handleState(const int& srcNodeId,
+            const Message& receivedMessage,
+            Messenger& messenger) {
+  // TODO replace the log file contents with the 'log' data field
+  int id = receivedMessage.getId();
+  nlohmann::json json = {{"recoveryId", id}};
+  const std::string& jsonString = json.dump();
+
+  Message message;
+  messenger.setMessage(FailureCode::STATE_UPDATED, jsonString, message);
+
+  messenger.send(srcNodeId, message);
+}
+
+void
+handlePing(const int& srcNodeId,
+           Messenger& messenger,
+           std::mutex& mutex,
+           std::vector<timePoint>& timeStamps) {
+  int i = idToIndex(messenger.getRank(), srcNodeId);
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    timeStamps[i] = std::chrono::high_resolution_clock::now();
+  }
+}
+
+void
 FailureManager::handleMessage(const int& srcNodeId,
                               const Message& receivedMessage,
                               const Messenger::Connection& connection) {
   int clusterSize = m_messenger.getClusterSize();
   FailureCode code = receivedMessage.getCode<FailureCode>();
-  int id = receivedMessage.getId();
-
-  int nodeId = m_messenger.getRank();
   switch (code) {
   case FailureCode::PING: {
-    std::cout << "ping: from: " << srcNodeId << " on: " << nodeId << std::endl; 
-    int i = srcNodeId < nodeId ? srcNodeId : srcNodeId - 1;
-
-    {
-      std::unique_lock<std::mutex> lock(m_mutex);
-      m_timeStamps[i] = std::chrono::high_resolution_clock::now();
-    }
+    handlePing(srcNodeId, m_messenger, m_context.mutex, m_context.timeStamps);
     break;
   }
   case FailureCode::STATE: {
-    std::cout << "state" << std::endl; 
-    // TODO replace the log file contents with the 'log' data field
-    // const std::string& data = receivedMessage.getData();
-    // nlohmann::json dataJson = nlohmann::json::parse(data);
-
-    // dataJson.at();
-
-    nlohmann::json json = {{"recoveryId", id}};
-    const std::string& jsonString = json.dump();
-
-    Message message;
-    m_messenger.setMessage(FailureCode::STATE_UPDATED, jsonString, message);
-
-    m_messenger.send(srcNodeId, message);
+    handleState(srcNodeId, receivedMessage, m_messenger);
     break;
   }
   case FailureCode::STATE_UPDATED: {
-    std::cout << "state updated" << std::endl; 
-    const std::string& messageData = receivedMessage.getData();
-    nlohmann::json json = nlohmann::json::parse(messageData);
-    int recoveryId = json.at("recoveryId");
-    bool correctRecoveryId;
-
-    {
-      std::unique_lock<std::mutex> lock(m_curRecoveryIdMutex);
-      correctRecoveryId = m_curRecoveryId == recoveryId;
-    }
-
-    std::shared_ptr<ElectionManager> electionManager =
-        m_receiverManager->getReceiver<ElectionManager>();
-
-    bool amLeader = electionManager->getLeaderNodeId() == nodeId;
-    if (correctRecoveryId == true && amLeader == true) {
-      broadcastRecovered(m_messenger, srcNodeId);
-
-      enableComm(srcNodeId, m_messenger, m_mutex, m_isAlive);
-    }
+    handleStateUpdate(srcNodeId,
+                      receivedMessage,
+                      m_messenger,
+                      m_context.mutex,
+                      m_context.curRecoveryIdMutex,
+                      m_context.curRecoveryId,
+                      m_receiverManager,
+                      m_context.isAlive);
     break;
   }
   case FailureCode::RECOVERED: {
-    const std::string& messageData = receivedMessage.getData();
-    nlohmann::json json = nlohmann::json::parse(messageData);
-    int recoveredNodeId = json.at("recoveredNodeId");
-    std::cout << "recovered: " << recoveredNodeId << std::endl; 
-    int nodeIndex =
-        recoveredNodeId < nodeId ? recoveredNodeId : recoveredNodeId - 1;
-
-    if (nodeId == recoveredNodeId) {
-      for (int i = 0; i < m_messenger.getClusterSize() - 1; i++) {
-        m_timeStamps[i] = std::chrono::high_resolution_clock::now();
-      }
-    }
-    else {
-      enableComm(recoveredNodeId, m_messenger, m_mutex, m_isAlive);
-    }
+    std::cout << "recovered" << std::endl; 
+    handleRecovered(receivedMessage,
+                    m_messenger,
+                    m_context.mutex,
+                    m_context.timeStamps,
+                    m_context.isAlive);
     break;
   }
   }
@@ -327,10 +328,10 @@ FailureManager::stopReceiver() {
 
 void
 FailureManager::sleep() {
-  std::unique_lock<std::mutex> lock(m_mutex);
+  std::unique_lock<std::mutex> lock(m_context.mutex);
 
-  if (m_blockClientConn == true) {
-    m_blockClientConnCond.wait(lock,
-                               [&] { return m_blockClientConn == false; });
+  if (m_context.blockClientConn == true) {
+    m_context.blockClientConnCond.wait(
+        lock, [&] { return m_context.blockClientConn == false; });
   }
 }

@@ -28,21 +28,22 @@ public:
 
   void
   sleep();
+
+  struct Context {
+    std::mutex mutex;
+    std::vector<timePoint> timeStamps;
+    std::vector<bool> isAlive;
+    int curRecoveryId = -1;
+    std::mutex curRecoveryIdMutex;
+    bool blockClientConn = false;
+    std::condition_variable blockClientConnCond;
+    bool clientConnBlocked = false;
+    std::condition_variable clientConnBlockedCond;
+  };
+
 private:
   void
   init() final;
 
-  std::mutex m_mutex;;
-
-  std::vector<timePoint> m_timeStamps;
-  std::vector<bool> m_isAlive;
-
-  std::mutex m_curRecoveryIdMutex;
-  int m_curRecoveryId = -1;
-
-  bool m_blockClientConn = false;
-  std::condition_variable m_blockClientConnCond;
-
-  bool m_clientConnBlocked = false;
-  std::condition_variable m_clientConnBlockedCond;
+  Context m_context;
 };

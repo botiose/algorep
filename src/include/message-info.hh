@@ -24,7 +24,14 @@ enum class ConsensusCode {
   SIZE
 };
 
-enum class FailureCode { SHUTDOWN, PING, SIZE };
+enum class FailureCode {
+  SHUTDOWN,
+  PING,
+  STATE,
+  STATE_UPDATED,
+  RECOVERED,
+  SIZE
+};
 
 enum class ClientCode {
   SHUTDOWN,

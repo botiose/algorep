@@ -3,6 +3,7 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <condition_variable>
 
 #include "message-receiver.hh"
 #include "messenger.hh"
@@ -25,14 +26,23 @@ public:
   void
   stopReceiver() final;
 
+  void
+  sleep();
 private:
   void
   init() final;
 
-  std::mutex m_mutex;
-
-  std::thread m_pingThread;
+  std::mutex m_mutex;;
 
   std::vector<timePoint> m_timeStamps;
   std::vector<bool> m_isAlive;
+
+  std::mutex m_curRecoveryIdMutex;
+  int m_curRecoveryId = -1;
+
+  bool m_blockClientConn = false;
+  std::condition_variable m_blockClientConnCond;
+
+  bool m_clientConnBlocked = false;
+  std::condition_variable m_clientConnBlockedCond;
 };

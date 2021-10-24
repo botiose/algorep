@@ -6,6 +6,7 @@
 #include "client-manager.hh"
 #include "consensus-manager.hh"
 #include "election-manager.hh"
+#include "failure-manager.hh"
 #include "receiver-manager.hh"
 
 #define LOOP_SLEEP_DURATION 50
@@ -178,10 +179,14 @@ ClientManager::startReceiver() {
 
   std::shared_ptr<ReplManager> replManager =
       m_receiverManager->getReceiver<ReplManager>();
+  std::shared_ptr<FailureManager> failureManager =
+      m_receiverManager->getReceiver<FailureManager>();
+
 
   bool isUp = true;
   while (isUp == true) {
     replManager->sleep();
+    failureManager->sleep();
 
     this->receivePendingMessages(isUp);
 

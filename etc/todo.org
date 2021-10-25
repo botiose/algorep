@@ -26,25 +26,27 @@
 ** DONE in leader election add call to enableClientCommunication
 ** DONE start a leader election instead of setting the leader upon startup
 ** DONE make a virtual 'init' command called before main loop in MessageReceiver
+** TODO [#B] shutdown the 'ping' and 'recovery' threads
 ** TODO [#A] implement failure detection heartbeat thread
 ** TODO [#C] use conditionals in waitForVictor 
-** TODO cleanup the failure detector, index to id & id to index
-** TODO in consensus manager drop message not originating from current leader
-** TODO shutdown the 'ping' and 'recovery' threads
-** TODO remove allocating logic in the LogFileManager contructor
+** TODO [#C] cleanup the failure detector, index to id & id to index
+** TODO [#A] in consensus manager drop message not originating from current leader
+** TODO [#C] remove allocating logic in the LogFileManager contructor
 * TODO messenger
 ** DONE change the 'cluster size' and rank getter to return the values
 ** TODO [#A] change blocking Send to non-blocking Isend
-** TODO implement received message dropping from dead nodes
-** TODO make a broadcast function
-* DONE client
+** TODO [#B] implement received message dropping from dead nodes
+** TODO [#C] implement a broacast member function
+** TODO [#C] implement a function for self messaging
+* TODO client
 ** DONE implement server communication
 ** DONE [#B] implement the random command generation script
 ** DONE [#B] implement reading and sending the commands in the command file
 ** DONE [#B] create a client-repl directory for the client's repl files
-** DONE [#B] create a client-command directory for the client's random command files
+** DONE create a client-command directory for the client's random command files
 ** DONE handle repl shutdown in the client
 ** DONE set client speed sleep
+** TODO [#A] make the client refresh the looked up port when replication timesout
 * TODO doc
 ** TODO [#C] document header functions
 ** TODO [#C] why repl messaging is done through a file

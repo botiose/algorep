@@ -231,8 +231,7 @@ ElectionManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(LeaderElectionCode::SHUTDOWN, message);
 
-  int nodeId = m_messenger.getRank();
-  m_messenger.send(nodeId, message);
+  m_messenger.send(m_messenger.getRank(), message);
 }
 
 int

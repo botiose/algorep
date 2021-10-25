@@ -13,4 +13,4 @@ while [ $isUp -eq 0 ]; do
     isUp=$?
 done
 
-mpirun --host localhost /home/otiose/repos/epita/algorep/build/x86_64/bin/shutdown-client
+mpirun --ompi-server file:etc/urifile --host localhost bin/shutdown-client

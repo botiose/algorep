@@ -14,6 +14,7 @@ set(SERVER_SRC
   src/message-info.cc
   src/message-receiver.cc
   src/receiver-manager.cc
+  src/log-file-manager.cc
   src/manager/consensus-manager.cc
   src/manager/election-manager.cc
   src/manager/client-manager.cc

@@ -10,8 +10,10 @@
 #define RECOVERY_DURATION 3
 
 FailureManager::FailureManager(Messenger& messenger,
-                               std::shared_ptr<ReceiverManager> receiverManager)
-    : MessageReceiver(messenger, managedTag, receiverManager) {
+                               std::shared_ptr<ReceiverManager> receiverManager,
+                               LogFileManager& logFileManager)
+    : MessageReceiver(messenger, managedTag, receiverManager),
+      m_logFileManager(logFileManager) {
 }
 
 void
@@ -57,6 +59,7 @@ handleNodeFailure(const int& nodeIndex,
 void
 handleNodeRecovery(int nodeIndex,
                    Messenger& messenger,
+                   LogFileManager& logFileManager,
                    std::shared_ptr<ReceiverManager>& receiverManager,
                    FailureManager::Context& failureContext) {
   // pause the client manager
@@ -67,10 +70,13 @@ handleNodeRecovery(int nodeIndex,
         lock, [&] { return failureContext.clientConnBlocked == false; });
   }
 
-  // TODO read the log and set the data field
+  std::string logContents;
+  logFileManager.read(logContents);
+  nlohmann::json json = {{"state", logContents}};
+  const std::string& jsonString = json.dump();
 
   Message message;
-  messenger.setMessage(FailureCode::STATE, "", message);
+  messenger.setMessage(FailureCode::STATE, jsonString, message);
 
   {
     std::unique_lock<std::mutex> lock(failureContext.curRecoveryIdMutex);
@@ -99,8 +105,10 @@ handleNodeRecovery(int nodeIndex,
 
 void
 checkTimeStamps(Messenger& messenger,
+                LogFileManager& logFileManager,
                 std::shared_ptr<ReceiverManager>& receiverManager,
-                FailureManager::Context& failureContext) {
+                FailureManager::Context& failureContext,
+                std::thread& recoveryThread) {
   for (int i = 0; i < messenger.getClusterSize() - 1; i++) {
     {
       std::unique_lock<std::mutex> lock(failureContext.mutex);
@@ -122,14 +130,12 @@ checkTimeStamps(Messenger& messenger,
         int leaderNodeId = electionManager->getLeaderNodeId();
         int nodeId = messenger.getRank();
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
-          // TODO spawn a new thread for this call
-
-          std::thread recoveryThread = std::thread(handleNodeRecovery,
-                                                   i,
-                                                   std::ref(messenger),
-                                                   std::ref(receiverManager),
-                                                   std::ref(failureContext));
-          recoveryThread.detach();
+          recoveryThread = std::thread(handleNodeRecovery,
+                                       i,
+                                       std::ref(messenger),
+                                       std::ref(logFileManager),
+                                       std::ref(receiverManager),
+                                       std::ref(failureContext));
         }
       }
     }
@@ -138,8 +144,11 @@ checkTimeStamps(Messenger& messenger,
 
 void
 pingCheck(Messenger& messenger,
+          LogFileManager& logFileManager,
           std::shared_ptr<ReceiverManager>& receiverManager,
-          FailureManager::Context& failureContext) {
+          FailureManager::Context& failureContext,
+          std::thread& recoveryThread,
+          bool& pingThreadIsUp) {
   std::shared_ptr<ReplManager> replManager =
       receiverManager->getReceiver<ReplManager>();
 
@@ -149,8 +158,17 @@ pingCheck(Messenger& messenger,
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
 
-    checkTimeStamps(messenger, receiverManager, failureContext);
+    checkTimeStamps(messenger,
+                    logFileManager,
+                    receiverManager,
+                    failureContext,
+                    recoveryThread);
     broadcastPing(messenger);
+
+    {
+      std::unique_lock<std::mutex> lock(failureContext.mutex);
+      isUp = pingThreadIsUp;
+    }    
   }
 }
 
@@ -166,12 +184,13 @@ FailureManager::init() {
     m_context.isAlive[i] = true;
   }
 
-  // TODO handle thread shutdown
-  std::thread pingThread = std::thread(pingCheck,
-                                       std::ref(m_messenger),
-                                       std::ref(m_receiverManager),
-                                       std::ref(m_context));
-  pingThread.detach();
+  m_pingThread = std::thread(pingCheck,
+                             std::ref(m_messenger),
+                             std::ref(m_logFileManager),
+                             std::ref(m_receiverManager),
+                             std::ref(m_context),
+                             std::ref(m_recoveryThread),
+                             std::ref(m_pingThreadIsUp));
 }
 
 int
@@ -264,8 +283,14 @@ handleRecovered(const Message& receivedMessage,
 void
 handleState(const int& srcNodeId,
             const Message& receivedMessage,
-            Messenger& messenger) {
-  // TODO replace the log file contents with the 'log' data field
+            Messenger& messenger,
+            LogFileManager& logFileManager) {
+  const std::string& messageData = receivedMessage.getData();
+  nlohmann::json messageDataJson = nlohmann::json::parse(messageData);
+  const std::string& logContents = messageDataJson.at("state");  
+
+  logFileManager.replace(logContents);
+
   int id = receivedMessage.getId();
   nlohmann::json json = {{"recoveryId", id}};
   const std::string& jsonString = json.dump();
@@ -301,10 +326,12 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::STATE: {
-    handleState(srcNodeId, receivedMessage, m_messenger);
+    std::cout << "state" << std::endl; 
+    handleState(srcNodeId, receivedMessage, m_messenger, m_logFileManager);
     break;
   }
   case FailureCode::STATE_UPDATED: {
+    std::cout << "state updated" << std::endl; 
     handleStateUpdate(srcNodeId,
                       receivedMessage,
                       m_messenger,
@@ -316,6 +343,7 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::RECOVERED: {
+    std::cout << "recovered" << std::endl; 
     handleRecovered(receivedMessage,
                     m_messenger,
                     m_context.mutex,
@@ -331,6 +359,13 @@ FailureManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(FailureCode::SHUTDOWN, message);
   m_messenger.send(m_messenger.getRank(), message);
+
+  {
+    std::unique_lock<std::mutex> lock(m_context.mutex);
+    m_pingThreadIsUp = false;
+  }  
+  
+  m_pingThread.join();
 }
 
 void
@@ -340,5 +375,7 @@ FailureManager::sleep() {
   if (m_context.blockClientConn == true) {
     m_context.blockClientConnCond.wait(
         lock, [&] { return m_context.blockClientConn == false; });
+
+    m_recoveryThread.join();
   }
 }

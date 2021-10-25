@@ -41,7 +41,8 @@ Messenger::send(const int& dstNodeId,
                 const Messenger::Connection& connection) const {
   int nodeStatusIndex = dstNodeId < m_rank ? dstNodeId : dstNodeId - 1;
 
-  if (m_processIsAlive[nodeStatusIndex] == true) {
+  if (connection.connection != MPI_COMM_WORLD ||
+      m_processIsAlive[nodeStatusIndex] == true) {
     assert(message.getIsValid());
 
     std::string messageString;

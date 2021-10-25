@@ -8,6 +8,7 @@
 #include "message-receiver.hh"
 #include "messenger.hh"
 #include "repl-manager.hh"
+#include "log-file-manager.hh"
 
 using timePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
 
@@ -16,7 +17,8 @@ public:
   inline static MessageTag managedTag = MessageTag::FAILURE_DETECTION;
 
   FailureManager(Messenger& messenger,
-                 std::shared_ptr<ReceiverManager> receiverManager);
+                 std::shared_ptr<ReceiverManager> receiverManager,
+                 LogFileManager& m_logFileManager);
 
   void
   handleMessage(const int& srcNodeId,
@@ -46,5 +48,11 @@ private:
   void
   init() final;
 
+  LogFileManager& m_logFileManager;
+
   Context m_context;
+
+  bool m_pingThreadIsUp = true;
+  std::thread m_pingThread;
+  std::thread m_recoveryThread;
 };

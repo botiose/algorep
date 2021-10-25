@@ -15,13 +15,15 @@
 #include "messenger.hh"
 #include "message-receiver.hh"
 #include "repl-manager.hh"
+#include "log-file-manager.hh"
 
 class ConsensusManager : public MessageReceiver {
 public:
   inline static MessageTag managedTag = MessageTag::CONSENSUS;
 
   ConsensusManager(Messenger& messenger,
-                   std::shared_ptr<ReceiverManager> receiverManager);
+                   std::shared_ptr<ReceiverManager> receiverManager,
+                   LogFileManager& logFileManager);
   /**
    * @brief Start on consensus for the given value.
    *
@@ -78,5 +80,7 @@ public:
   stopReceiver() final;
 
 private:
+  LogFileManager& m_logFileManager;
+
   ConsensusContext m_context; /**< current round state/context */
 };

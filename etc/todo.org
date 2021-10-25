@@ -29,10 +29,13 @@
 ** TODO [#A] implement failure detection heartbeat thread
 ** TODO [#C] use conditionals in waitForVictor 
 ** TODO cleanup the failure detector, index to id & id to index
+** TODO in consensus manager drop message not originating from current leader
+** TODO shutdown the 'ping' and 'recovery' threads
+** TODO remove allocating logic in the LogFileManager contructor
 * TODO messenger
 ** DONE change the 'cluster size' and rank getter to return the values
 ** TODO [#A] change blocking Send to non-blocking Isend
-** TODO implement dead node in/out message blocking for non failure tag messages
+** TODO implement received message dropping from dead nodes
 ** TODO make a broadcast function
 * DONE client
 ** DONE implement server communication

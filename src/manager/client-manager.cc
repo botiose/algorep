@@ -9,7 +9,7 @@
 #include "failure-manager.hh"
 #include "receiver-manager.hh"
 
-#define LOOP_SLEEP_DURATION 50
+#define LOOP_SLEEP_DURATION 100
 
 ClientManager::ClientManager(Messenger& messenger,
                              std::shared_ptr<ReceiverManager> receiverManager)

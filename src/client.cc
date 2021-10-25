@@ -15,9 +15,7 @@
 
 void
 connectMessenger(Messenger& messenger,
-                 Messenger::Connection& serverConnection,
-                 int& argc,
-                 char* argv[]) {
+                 Messenger::Connection& serverConnection) {
   std::string port;
   messenger.lookupServerPort(port);
 
@@ -46,7 +44,7 @@ Client::connect(int argc, char* argv[]) {
 
   replManager->sleep();
 
-  connectMessenger(m_messenger, m_serverConnection, argc, argv);
+  connectMessenger(m_messenger, m_serverConnection);
 
   Message message;
   m_messenger.setMessage(ClientCode::CONNECT, message);
@@ -56,13 +54,13 @@ Client::connect(int argc, char* argv[]) {
 
 void
 Client::shutdownServer(int argc, char* argv[]) {
-  m_receiverManager = std::make_shared<ReceiverManager>();
-
   int rank;
   int clusterSize;
   m_messenger.start(argc, argv, rank, clusterSize);
 
-  connectMessenger(m_messenger, m_serverConnection, argc, argv);
+  m_receiverManager = std::make_shared<ReceiverManager>();
+
+  connectMessenger(m_messenger, m_serverConnection);
 
   Message message;
   m_messenger.setMessage(ClientCode::SHUTDOWN, message);

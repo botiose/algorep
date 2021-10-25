@@ -11,12 +11,12 @@
 #define PROMISE_WAIT_DURATION 3
 #define ACCEPT_WAIT_DURATION 5
 
-#define LOG_BASE_DIR "etc/server/log/"
-
 ConsensusManager::ConsensusManager(
     Messenger& messenger,
-    std::shared_ptr<ReceiverManager> receiverManager)
-    : MessageReceiver(messenger, managedTag, receiverManager) {
+    std::shared_ptr<ReceiverManager> receiverManager,
+    LogFileManager& logFileManager)
+    : MessageReceiver(messenger, managedTag, receiverManager),
+      m_logFileManager(logFileManager) {
 }
 
 void
@@ -246,26 +246,15 @@ handleProposeMessage(const Messenger& messenger,
 
 void
 handleAcceptedMessage(const Messenger& messenger,
-                      const Message& receivedMessage) {
+                      const Message& receivedMessage,
+                      LogFileManager& logFileManager) {
   // TODO check round id
-  char logFile[4];
-  std::sprintf(logFile, "%02d.txt", messenger.getRank());
-  
-  std::string logFilePath(LOG_BASE_DIR);
-  logFilePath.append(logFile);
-
-  std::ofstream ofs(logFilePath, std::ios_base::app);
-
   const std::string& messageData = receivedMessage.getData();
   nlohmann::json messageJson = nlohmann::json::parse(messageData);
 
   std::string value = messageJson.at("value");
 
-  std::cout << value << std::endl; 
-
-  ofs << value << std::endl;
-
-  ofs.close();
+  logFileManager.append(value);
 }
 
 void
@@ -286,7 +275,7 @@ ConsensusManager::handleMessage(const int& srcNodeId,
     break;
   }
   case ConsensusCode::ACCEPTED: {
-    handleAcceptedMessage(m_messenger, receivedMessage);
+    handleAcceptedMessage(m_messenger, receivedMessage, m_logFileManager);
     break;
   }
   }

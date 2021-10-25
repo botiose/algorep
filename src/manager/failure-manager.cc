@@ -39,7 +39,6 @@ handleNodeFailure(const int& nodeIndex,
                   Messenger& messenger,
                   std::vector<bool>& isAlive,
                   std::shared_ptr<ReceiverManager>& receiverManager) {
-  std::cout << "failure detected" << std::endl; 
   messenger.setNodeStatus(nodeIndex, false);
 
   int nodeId = messenger.getRank();
@@ -56,15 +55,17 @@ handleNodeFailure(const int& nodeIndex,
 }
 
 void
-handleNodeRecovery(const int& nodeIndex,
+handleNodeRecovery(int nodeIndex,
                    Messenger& messenger,
                    std::shared_ptr<ReceiverManager>& receiverManager,
-                   std::unique_lock<std::mutex>& lock,
                    FailureManager::Context& failureContext) {
   // pause the client manager
-  failureContext.blockClientConn = true;
-  failureContext.clientConnBlockedCond.wait(
-      lock, [&] { return failureContext.clientConnBlocked == false; });
+  {
+    std::unique_lock<std::mutex> lock(failureContext.clientConnMutex);
+    failureContext.blockClientConn = true;
+    failureContext.clientConnBlockedCond.wait(
+        lock, [&] { return failureContext.clientConnBlocked == false; });
+  }
 
   // TODO read the log and set the data field
 
@@ -89,8 +90,11 @@ handleNodeRecovery(const int& nodeIndex,
   }
 
   // unpause the client manager
-  failureContext.blockClientConn = false;
-  failureContext.blockClientConnCond.notify_all();
+  {
+    std::unique_lock<std::mutex> lock(failureContext.clientConnMutex);
+    failureContext.blockClientConn = false;
+    failureContext.blockClientConnCond.notify_all();
+  }
 }
 
 void
@@ -118,10 +122,14 @@ checkTimeStamps(Messenger& messenger,
         int leaderNodeId = electionManager->getLeaderNodeId();
         int nodeId = messenger.getRank();
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
-
           // TODO spawn a new thread for this call
-          handleNodeRecovery(
-              i, messenger, receiverManager, lock, failureContext);
+
+          std::thread recoveryThread = std::thread(handleNodeRecovery,
+                                                   i,
+                                                   std::ref(messenger),
+                                                   std::ref(receiverManager),
+                                                   std::ref(failureContext));
+          recoveryThread.detach();
         }
       }
     }
@@ -308,7 +316,6 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::RECOVERED: {
-    std::cout << "recovered" << std::endl; 
     handleRecovered(receivedMessage,
                     m_messenger,
                     m_context.mutex,
@@ -328,7 +335,7 @@ FailureManager::stopReceiver() {
 
 void
 FailureManager::sleep() {
-  std::unique_lock<std::mutex> lock(m_context.mutex);
+  std::unique_lock<std::mutex> lock(m_context.clientConnMutex);
 
   if (m_context.blockClientConn == true) {
     m_context.blockClientConnCond.wait(

@@ -1,3 +1,0 @@
-start
-1,crash
-1,recover

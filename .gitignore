@@ -1,5 +1,5 @@
 build
 etc/urifile
 etc/config.json
-etc/server
-etc/client
+etc/server/*
+etc/client/*

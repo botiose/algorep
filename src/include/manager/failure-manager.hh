@@ -30,11 +30,12 @@ public:
   sleep();
 
   struct Context {
-    std::mutex mutex;
+    std::mutex mutex; // TODO rename to nodeStateMutex
     std::vector<timePoint> timeStamps;
     std::vector<bool> isAlive;
     int curRecoveryId = -1;
     std::mutex curRecoveryIdMutex;
+    std::mutex clientConnMutex;
     bool blockClientConn = false;
     std::condition_variable blockClientConnCond;
     bool clientConnBlocked = false;

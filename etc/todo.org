@@ -29,7 +29,7 @@
 ** DONE [#B] shutdown the 'ping' and 'recovery' threads
 ** DONE [#A] implement failure detection heartbeat thread
 ** DONE [#C] cleanup the failure detector, index to id & id to index
-** TODO [#A] implement failed send logic for every send instance
+** TODO [#B] implement failed send logic for every send instance
 ** TODO [#C] remove allocating logic in the LogFileManager contructor
 * TODO messenger
 ** DONE change the 'cluster size' and rank getter to return the values
@@ -37,8 +37,8 @@
 ** DONE [#A] implement message dropping from dead nodes except with failcode
 ** TODO [#C] implement a broacast member function
 ** TODO [#C] implement a function for self messaging
-** TODO [#B] handle parse errors
-* TODO client
+** DONE [#B] handle parse errors
+* DONE client
 ** DONE implement server communication
 ** DONE [#B] implement the random command generation script
 ** DONE [#B] implement reading and sending the commands in the command file

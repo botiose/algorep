@@ -224,10 +224,6 @@ handlePrepareMessage(const Messenger& messenger,
       bool sent;
       messenger.send(srcNodeId, promise, sent);
       // TODO handle sent
-
-      if (sent == false) {
-        std::cout << "send failed" << std::endl; 
-      }
     }
   }
 }

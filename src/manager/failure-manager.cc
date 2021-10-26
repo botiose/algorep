@@ -25,8 +25,10 @@ broadcastPing(Messenger& messenger) {
     if (i != nodeId) {
       Message message;
       messenger.setMessage(FailureCode::PING, message);
-
-      messenger.send(i, message);
+      
+      bool sent;
+      messenger.send(i, message, sent);
+      // TODO handle sent
     }
   }
 }
@@ -85,7 +87,9 @@ handleNodeRecovery(int nodeIndex,
   }
 
   int dstNodeId = indexToId(messenger.getRank(), nodeIndex);
-  messenger.send(dstNodeId, message);
+  bool sent;
+  messenger.send(dstNodeId, message, sent);
+  // TODO handle sent
 
   std::this_thread::sleep_for(std::chrono::seconds(RECOVERY_DURATION));
 
@@ -120,10 +124,12 @@ checkTimeStamps(Messenger& messenger,
               .count();
 
       if (failureContext.isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
+        std::cout << "failure detected" << std::endl; 
         handleNodeFailure(
             i, messenger, failureContext.isAlive, receiverManager);
       } else if (failureContext.isAlive[i] == false &&
                  elapsed < TIMEOUT_DURATION) {
+        std::cout << "recovery detected" << std::endl; 
         std::shared_ptr<ElectionManager> electionManager =
             receiverManager->getReceiver<ElectionManager>();
         bool noCurrentRecovery = failureContext.curRecoveryId == -1;
@@ -208,7 +214,9 @@ broadcastRecovered(Messenger& messenger, const int& recoveredNodeId) {
 
   for (int i = 0; i < messenger.getClusterSize(); i++) {
     if (i != messenger.getRank()) {
-      messenger.send(i, message);
+      bool sent;
+      messenger.send(i, message, sent);
+      // TODO handle sent
     }
   }
 }
@@ -298,7 +306,9 @@ handleState(const int& srcNodeId,
   Message message;
   messenger.setMessage(FailureCode::STATE_UPDATED, jsonString, message);
 
-  messenger.send(srcNodeId, message);
+  bool sent;
+  messenger.send(srcNodeId, message, sent);
+  // TODO handle sent
 }
 
 void
@@ -358,7 +368,8 @@ void
 FailureManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(FailureCode::SHUTDOWN, message);
-  m_messenger.send(m_messenger.getRank(), message);
+  bool sent;
+  m_messenger.send(m_messenger.getRank(), message, sent);
 
   {
     std::unique_lock<std::mutex> lock(m_context.mutex);

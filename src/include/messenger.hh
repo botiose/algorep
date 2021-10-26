@@ -96,18 +96,14 @@ public:
   void
   send(const int& dstNodeId,
        const Message& message,
-       const Connection& connection = {MPI_COMM_WORLD}) const;
+       bool& sent,
+       const Connection& connection = {MPI_COMM_WORLD},
+       const int& waitDuration = {1000}) const;
 
-  /**
-   * @brief Blocks until a message is received.
-   *
-   * @param[out] srcNodeId node id from which the message was received.
-   * @param[out] message message received.
-   */
   void
-  receiveBlock(int& srcNodeId,
-               Message& message,
-               const Connection& connection = {MPI_COMM_WORLD}) const;
+  sendBlock(const int& dstNodeId,
+            const Message& message,
+            const Connection& connection = {MPI_COMM_WORLD}) const;
 
   /**
    * @brief Blocks until a message of specified tag is received.
@@ -139,17 +135,6 @@ public:
                  int& srcNodeId,
                  Message& message,
                  const Connection& connection = {MPI_COMM_WORLD}) const;
-
-  /**
-   * @brief Check whether a message with given tag is pending.
-   *
-   * @param[in] messageTag message tag.
-   * @param[out] hasPending whether there's a pending message.
-   */
-  void
-  hasPendingWithTag(const MessageTag& messageTag,
-                    bool& hasPending,
-                    const Connection& connection = {MPI_COMM_WORLD}) const;
 
   void
   probeTagBlock(const Connection& connection, MessageTag& messageTag) const;

@@ -8,16 +8,19 @@ public:
   Client() = default;
 
   void
-  connect(int argc, char** argv);
+  init(int argc, char** argv);
+
+  void
+  destroy();
+
+  void
+  connect();
 
   void
   replicateCommands();
 
   void
   shutdownServer(int argc, char* argv[]);
-  
-  void
-  disconnect();
 
 private:
   Messenger m_messenger;

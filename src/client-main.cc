@@ -1,16 +1,14 @@
 #include "client.hh"
 
-
-
 int
 main(int argc, char* argv[]) {
   Client client{};
 
-  client.connect(argc, argv);
+  client.init(argc, argv);
 
   client.replicateCommands();
 
-  client.disconnect();
+  client.destroy();
 
   return 0;
 }

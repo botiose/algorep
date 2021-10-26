@@ -1,4 +1,5 @@
 #include <cassert>
+#include <thread>
 #include <json.hpp>
 
 #include "messenger.hh"
@@ -7,6 +8,7 @@
 // TODO update this to the actual amount required.
 #define MAX_MESSAGE_SIZE 1000
 #define SERVER_NAME "server"
+#define SEND_WAIT_DURATION 100
 
 void
 serializeMessage(const Message& message, std::string& messageString) {
@@ -21,24 +23,32 @@ void
 deserializeMessage(const MessagePassKey& passKey,
                    const std::string& messageString,
                    const int& tag,
-                   Message& message) {
-  nlohmann::json messageJson = nlohmann::json::parse(messageString);
+                   Message& message,
+                   bool& isValid) {
+  isValid = nlohmann::json::accept(messageString);
 
-  int code;
-  int id;
-  std::shared_ptr<std::string> data = std::make_shared<std::string>();
-  std::string& dataStr = *data.get();
-  messageJson.at("code").get_to(code);
-  messageJson.at("id").get_to(id);
-  messageJson.at("data").get_to(dataStr);
+  if (isValid) {
+    nlohmann::json messageJson = nlohmann::json::parse(messageString);
 
-  message = Message(passKey, tag, code, id, data);
+    int code;
+    int id;
+    std::shared_ptr<std::string> data = std::make_shared<std::string>();
+    std::string& dataStr = *data.get();
+    messageJson.at("code").get_to(code);
+    messageJson.at("id").get_to(id);
+    messageJson.at("data").get_to(dataStr);
+
+    message = Message(passKey, tag, code, id, data);
+  }
 }
 
 void
 Messenger::send(const int& dstNodeId,
                 const Message& message,
-                const Messenger::Connection& connection) const {
+                bool& sent,
+                const Messenger::Connection& connection,
+                const int& waitDuration) const {
+  sent = false;
   int nodeStatusIndex = dstNodeId < m_rank ? dstNodeId : dstNodeId - 1;
 
   if (dstNodeId == m_rank || connection.connection != MPI_COMM_WORLD ||
@@ -50,21 +60,62 @@ Messenger::send(const int& dstNodeId,
     serializeMessage(message, messageString);
 
     int tag = message.getTagInt();
-    MPI_Send(messageString.c_str(),
-             MAX_MESSAGE_SIZE,
-             MPI_CHAR,
-             dstNodeId,
-             tag,
-             connection.connection);
+
+    if (tag != 3) {
+      std::cout << "["<< m_rank << "]" << "[o]"<< "[" << tag << "]: " << messageString << std::endl;
+    }
+
+    MPI_Request request;
+    MPI_Isend(messageString.c_str(),
+              MAX_MESSAGE_SIZE,
+              MPI_CHAR,
+              dstNodeId,
+              tag,
+              connection.connection,
+              &request
+             );
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(waitDuration));
+
+    MPI_Wait(&request, MPI_STATUS_IGNORE);
+    
+    // int flag;
+    // MPI_Test(&request, &flag, MPI_STATUS_IGNORE);
+
+    // sent = flag == true;
   }
 }
 
 void
-receive(const MessagePassKey& passKey,
+Messenger::sendBlock(const int& dstNodeId,
+                     const Message& message,
+                     const Connection& connection) const {
+  std::string messageString;
+  messageString.resize(MAX_MESSAGE_SIZE);
+  serializeMessage(message, messageString);
+
+  int tag = message.getTagInt();
+
+  if (tag != 3) {  
+    std::cout << "["<< m_rank << "]" << "[o]" << "[" << tag << "]: " << messageString << std::endl;
+  }
+
+  MPI_Send(messageString.c_str(),
+           MAX_MESSAGE_SIZE,
+           MPI_CHAR,
+           dstNodeId,
+           tag,
+           connection.connection);
+}
+
+void
+receive(const int& nodeId, 
+        const MessagePassKey& passKey,
         const int& tag,
         const Messenger::Connection& connection,
         int& srcNodeId,
-        Message& message) {
+        Message& message,
+        bool& isValid) {
   MPI_Status status;
 
   char messageChar[MAX_MESSAGE_SIZE];
@@ -78,17 +129,28 @@ receive(const MessagePassKey& passKey,
            &status);
 
   std::string messageString(messageChar);
-  deserializeMessage(passKey, messageString, status.MPI_TAG, message);
+  deserializeMessage(passKey, messageString, status.MPI_TAG, message, isValid);
 
   srcNodeId = status.MPI_SOURCE;
+
+  if (tag != 3) {
+    std::cout << "[" << nodeId << "]"
+              << "[i]"
+              << "[" << tag << "]: " << messageString << std::endl;
+  }
 }
 
-void
-Messenger::receiveBlock(int& srcNodeId,
-                        Message& message,
-                        const Messenger::Connection& connection) const {
-  MessagePassKey passKey;
-  receive(passKey, MPI_ANY_TAG, connection, srcNodeId, message);
+bool
+shouldDropReceive(const std::vector<bool>& processIsAlive, 
+                  const int& nodeId,
+                  const int& srcNodeId,
+                  const Messenger::Connection& connection,
+                  const MessageTag tag) {
+    int nodeStatusIndex = srcNodeId < nodeId ? srcNodeId : srcNodeId - 1;
+
+    return !(srcNodeId == nodeId || connection.connection != MPI_COMM_WORLD ||
+           (processIsAlive[nodeStatusIndex] == true ||
+            tag == MessageTag::FAILURE_DETECTION));
 }
 
 void
@@ -98,19 +160,33 @@ Messenger::receiveWithTagBlock(const MessageTag& messageTag,
                                const Messenger::Connection& connection) const {
   int tag = static_cast<int>(messageTag);
   MessagePassKey passKey;
-  receive(passKey, tag, connection, srcNodeId, message);
+
+  bool messageReceived = false;
+  while (messageReceived == false) {
+    bool isValid;
+    receive(m_rank, passKey, tag, connection, srcNodeId, message, isValid);
+
+    bool shouldDrop = shouldDropReceive(
+        m_processIsAlive, m_rank, srcNodeId, connection, messageTag);
+    messageReceived = shouldDrop == false || isValid == false;
+  }
 }
 
 void
-Messenger::hasPendingWithTag(const MessageTag& messageTag,
-                             bool& hasPending,
-                             const Messenger::Connection& connection) const {
+hasPendingWithTag(const MessageTag& messageTag,
+                  bool& hasPending,
+                  int& srcNodeId,
+                  const Messenger::Connection& connection) {
   int tag = static_cast<int>(messageTag);
   MPI_Status status;
   int flag;
   MPI_Iprobe(MPI_ANY_SOURCE, tag, connection.connection, &flag, &status);
 
   hasPending = flag == 1;
+  
+  if (hasPending == true) {
+    srcNodeId = status.MPI_SOURCE;
+  }
 }
 
 void
@@ -128,9 +204,16 @@ Messenger::receiveWithTag(const MessageTag& messageTag,
                           int& srcNodeId,
                           Message& message,
                           const Messenger::Connection& connection) const {
-  hasPendingWithTag(messageTag, messageReceived, connection);
+  hasPendingWithTag(messageTag, messageReceived, srcNodeId, connection);
   if (messageReceived == true) {
-    receiveWithTagBlock(messageTag, srcNodeId, message, connection);
+    bool shouldDrop = shouldDropReceive(
+        m_processIsAlive, m_rank, srcNodeId, connection, messageTag);
+    if (shouldDrop == false) {
+      receiveWithTagBlock(messageTag, srcNodeId, message, connection);
+    } else {
+      srcNodeId = -1;
+      messageReceived = false;
+    }
   }
 }
 

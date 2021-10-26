@@ -36,7 +36,9 @@ broadcastElection(Messenger& messenger,
   int nodeId = messenger.getRank();
   int clusterSize = messenger.getClusterSize();
   for (int i = nodeId + 1; i < clusterSize; i++) {
-    messenger.send(i, electionMessage);
+    bool sent;
+    messenger.send(i, electionMessage, sent);
+    // TODO handle sent
   }
 }
 
@@ -70,7 +72,9 @@ declareVictory(const Messenger& messenger,
       continue;
     }
 
-    messenger.send(i, victoryMessage);
+    bool sent;
+    messenger.send(i, victoryMessage, sent);
+    // TODO handle sent
   }
 
   setLeaderNodeId(nodeId, mutex, leaderNodeId);
@@ -148,7 +152,10 @@ void
 respondAlive(const Messenger& messenger, const int& srcNodeId) {
   Message aliveMessage;
   messenger.setMessage(LeaderElectionCode::ALIVE, aliveMessage);
-  messenger.send(srcNodeId, aliveMessage);
+  
+  bool sent;
+  messenger.send(srcNodeId, aliveMessage, sent);
+  // TODO handle sent
 }
 
 void
@@ -231,7 +238,8 @@ ElectionManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(LeaderElectionCode::SHUTDOWN, message);
 
-  m_messenger.send(m_messenger.getRank(), message);
+  bool sent;
+  m_messenger.send(m_messenger.getRank(), message, sent);
 }
 
 int

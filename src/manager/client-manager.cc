@@ -35,7 +35,9 @@ ClientManager::handleMessage(const int& srcNodeId,
     if (consensusReached == true) {
       Message message;
       m_messenger.setMessage(ClientCode::SUCCESS, message);
-      m_messenger.send(srcNodeId, message, connection);
+      bool sent;
+      m_messenger.send(srcNodeId, message, sent, connection);
+      // TODO handle sent
     }
 
     break;
@@ -93,7 +95,8 @@ acceptConnection(Messenger& messenger,
 
     int srcNodeId;
     Message message;
-    messenger.receiveBlock(srcNodeId, message, connection);
+    messenger.receiveWithTagBlock(
+        MessageTag::CLIENT, srcNodeId, message, connection);
 
     {
       std::unique_lock<std::mutex> lock(connectionMutex);
@@ -117,7 +120,9 @@ sendPort(const Messenger& messenger, const std::string& port) {
   Message message;
   messenger.setMessage(ClientCode::PORT, messageString, message);
 
-  messenger.send(prevNodeId, message);
+  bool sent;
+  messenger.send(prevNodeId, message, sent);
+  // TODO handle sent
 }
 
 void
@@ -160,8 +165,8 @@ shutdownNeighbor(const Messenger& messenger,
 
     Message message;
     messenger.setMessage(ClientCode::SHUTDOWN, message);
-    messenger.send(0, message, connection);
-    messenger.send(0, message, connection);
+    messenger.sendBlock(0, message, connection);
+    messenger.sendBlock(0, message, connection);
   }
 }
 

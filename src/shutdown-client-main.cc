@@ -6,8 +6,6 @@ main(int argc, char* argv[]) {
 
   client.shutdownServer(argc, argv);
 
-  client.disconnect();
-
   return 0;
 }
 

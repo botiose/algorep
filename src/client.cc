@@ -13,17 +13,9 @@
 #define REPL_FILE "repl.txt"
 #define COMMAND_FILE "command.txt"
 
-void
-connectMessenger(Messenger& messenger,
-                 Messenger::Connection& serverConnection) {
-  std::string port;
-  messenger.lookupServerPort(port);
-
-  messenger.connect(port, serverConnection);
-}
 
 void
-Client::connect(int argc, char* argv[]) {
+Client::init(int argc, char* argv[]) {
   int rank;
   int clusterSize;
   m_messenger.start(argc, argv, rank, clusterSize);
@@ -43,14 +35,91 @@ Client::connect(int argc, char* argv[]) {
   m_receiverManager->startReceiver(replManager);
 
   replManager->sleep();
+}
 
-  connectMessenger(m_messenger, m_serverConnection);
+void
+connectMessenger(Messenger& messenger,
+                 Messenger::Connection& serverConnection) {
+  std::string port;
+  messenger.lookupServerPort(port);
+
+  messenger.connect(port, serverConnection);
+}
+
+void
+connectToServer(Messenger& messenger, Messenger::Connection& serverConnection) {
+  connectMessenger(messenger, serverConnection);
 
   Message message;
-  m_messenger.setMessage(ClientCode::CONNECT, message);
-
-  m_messenger.send(0, message, m_serverConnection);
+  messenger.setMessage(ClientCode::CONNECT, message);
+  messenger.sendBlock(0, message, serverConnection);
 }
+
+void
+disconnect(Messenger& messenger, Messenger::Connection& serverConnection) {
+  Message message;
+  messenger.setMessage(ClientCode::DISCONNECT, message);
+
+  messenger.sendBlock(0, message, serverConnection);
+
+  messenger.disconnect(serverConnection);
+}
+
+void
+replicate(Messenger& messenger,
+          Messenger::Connection& serverConnection,
+          const std::string& data) {
+  bool replicated = false;
+  while (replicated == false) {
+    connectToServer(messenger, serverConnection);
+
+    Message message;
+    nlohmann::json dataJson = {{"value", data}};
+
+    std::string dataJsonString = dataJson.dump();
+
+    messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
+
+    messenger.sendBlock(0, message, serverConnection);
+
+    using namespace std::chrono;
+    auto start = high_resolution_clock::now();
+    auto cur = high_resolution_clock::now();
+    int elapsed = 0;
+    bool messageReceived = false;
+
+    Message responseMessage;
+    while ((messageReceived == false) && (elapsed < RESPONSE_WAIT_DURATION)) {
+      int srcNodeId;
+      messenger.receiveWithTag(MessageTag::CLIENT,
+                               messageReceived,
+                               srcNodeId,
+                               responseMessage,
+                               serverConnection);
+
+      std::this_thread::sleep_for(
+          std::chrono::milliseconds(LOOP_SLEEP_DURATION));
+
+      cur = high_resolution_clock::now();
+      elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
+    }
+
+    replicated = responseMessage.getCode<ClientCode>() == ClientCode::SUCCESS;
+
+    if (replicated == false) {
+      disconnect(messenger, serverConnection);
+    }
+  }
+
+  disconnect(messenger, serverConnection);
+}
+
+void
+Client::destroy() {
+  m_receiverManager->waitForReceiver(MessageTag::REPL);
+  m_messenger.stop();
+}
+
 
 void
 Client::shutdownServer(int argc, char* argv[]) {
@@ -65,61 +134,10 @@ Client::shutdownServer(int argc, char* argv[]) {
   Message message;
   m_messenger.setMessage(ClientCode::SHUTDOWN, message);
 
-  m_messenger.send(0, message, m_serverConnection);
-  m_messenger.send(0, message, m_serverConnection);
-}
+  m_messenger.sendBlock(0, message, m_serverConnection);
+  m_messenger.sendBlock(0, message, m_serverConnection);
 
-void
-replicate(const Messenger& messenger,
-                  const Messenger::Connection serverConnection,
-                  const std::string& data) {
-  bool replicated = false;
-  while (replicated == false) {
-    Message message;
-    nlohmann::json dataJson = {{"value", data}};
-
-    std::string dataJsonString = dataJson.dump();
-
-    messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
-
-    messenger.send(0, message, serverConnection);
-
-    using namespace std::chrono;
-    auto start = high_resolution_clock::now();
-    auto cur = high_resolution_clock::now();
-    int elapsed = 0;
-    bool messageReceived = false;
-
-    Message responseMessage;
-    while ((messageReceived == false) && (elapsed < RESPONSE_WAIT_DURATION)) {
-      int srcNodeId;
-      messenger.receiveWithTag(MessageTag::CLIENT,
-                                 messageReceived,
-                                 srcNodeId,
-                                 responseMessage,
-                                 serverConnection);
-
-      std::this_thread::sleep_for(
-          std::chrono::milliseconds(LOOP_SLEEP_DURATION));
-
-      cur = high_resolution_clock::now();
-      elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
-    }
-
-    replicated = responseMessage.getCode<ClientCode>() == ClientCode::SUCCESS;
-  }
-}
-
-void
-Client::disconnect() {
-  Message message;
-  m_messenger.setMessage(ClientCode::DISCONNECT, message);
-
-  m_messenger.send(0, message, m_serverConnection);
-
-  m_messenger.disconnect(m_serverConnection);
-
-  m_receiverManager->waitForReceiver(MessageTag::REPL);
+  disconnect(m_messenger, m_serverConnection);
 
   m_messenger.stop();
 }

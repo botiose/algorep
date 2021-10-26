@@ -27,7 +27,11 @@ broadcastPrepare(const Messenger& messenger,
   messenger.setMessage(ConsensusCode::PREPARE, prepare);
 
   for (int i = 0; i < clusterSize; i++) {
-    messenger.send(i, prepare);
+
+    bool sent;
+    messenger.send(i, prepare, sent);
+
+    // TODO handle sent
   }
 
   roundId = prepare.getId();
@@ -98,7 +102,10 @@ broadcastPropose(const Messenger& messenger,
   messenger.setMessage(ConsensusCode::PROPOSE, proposeData, propose);
 
   for (int i = 0; i < clusterSize; i++) {
-    messenger.send(i, propose);
+    bool sent;
+    messenger.send(i, propose, sent);
+
+    // TODO handle sent
   }
 }
 
@@ -146,7 +153,10 @@ broadcastAccepted(const Messenger& messenger,
   messenger.setMessage(ConsensusCode::ACCEPTED, acceptedData, accepted);
 
   for (int i = 0; i < clusterSize; i++) {
-    messenger.send(i, accepted);
+    bool sent;
+    messenger.send(i, accepted, sent);
+
+    // TODO handle sent
   }
 }
 
@@ -203,13 +213,21 @@ handlePrepareMessage(const Messenger& messenger,
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
-      messenger.send(srcNodeId, promise);
+      bool sent;
+      messenger.send(srcNodeId, promise, sent);
+      // TODO handle sent
     } else {
       nlohmann::json promiseDataJson = {{"roundId", id}};
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
-      messenger.send(srcNodeId, promise);
+      bool sent;
+      messenger.send(srcNodeId, promise, sent);
+      // TODO handle sent
+
+      if (sent == false) {
+        std::cout << "send failed" << std::endl; 
+      }
     }
   }
 }
@@ -237,8 +255,10 @@ handleProposeMessage(const Messenger& messenger,
     const std::string& acceptData = acceptDataJson.dump();
 
     messenger.setMessage(ConsensusCode::ACCEPT, acceptData, accept);
-
-    messenger.send(srcNodeId, accept);
+    
+    bool sent;
+    messenger.send(srcNodeId, accept, sent);
+    // TODO handle sent
 
     context = ConsensusManager::ConsensusContext{};
   }
@@ -289,5 +309,7 @@ void
 ConsensusManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(ConsensusCode::SHUTDOWN, message);
-  m_messenger.send(m_messenger.getRank(), message);
+  
+  bool sent;
+  m_messenger.send(m_messenger.getRank(), message, sent);
 }

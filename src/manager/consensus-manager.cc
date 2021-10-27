@@ -21,188 +21,142 @@ ConsensusManager::ConsensusManager(
 
 void
 broadcastPrepare(const Messenger& messenger,
-                 const int& clusterSize,
-                 int& roundId) {
+                 std::mutex& mutex,
+                 ConsensusManager::Context& context) {
   Message prepare;
   messenger.setMessage(ConsensusCode::PREPARE, prepare);
 
-  for (int i = 0; i < clusterSize; i++) {
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(prepare, 0, clusterSize, false);
 
-    bool sent;
-    messenger.send(i, prepare, sent);
+  {
+    std::unique_lock<std::mutex> lock(mutex);
 
-    // TODO handle sent
+    context.roundId = prepare.getId();
   }
-
-  roundId = prepare.getId();
-}
-
-void
-receivePromises(const Messenger& messenger,
-                const int& clusterSize,
-                const int& roundId,
-                bool& majorityPromised,
-                int& maxAcceptedId,
-                std::string& acceptedValue) {
-  bool messageReceived = false;
-  int promiseCount = 0;
-  maxAcceptedId = -1;
-
-  using namespace std::chrono;
-  auto start = high_resolution_clock::now();
-  auto cur = high_resolution_clock::now();
-  int elapsed = 0;
-
-  while (elapsed < PROMISE_WAIT_DURATION) {
-    int srcNodeId;
-    Message promise;
-    messenger.receiveWithTag(
-        MessageTag::CONSENSUS, messageReceived, srcNodeId, promise);
-
-    if (messageReceived == true) {
-      ConsensusCode code = promise.getCode<ConsensusCode>();
-      if (code == ConsensusCode::PROMISE) {
-        const std::string& messageData = promise.getData();
-        nlohmann::json messageJson = nlohmann::json::parse(messageData);
-
-        int id = messageJson.at("roundId");
-
-        if (id == roundId) {
-          int acceptedId = messageJson.value("acceptedId", -1);
-
-          if (acceptedId > maxAcceptedId) {
-            acceptedValue = messageJson.value("acceptedValue", "");
-          }
-
-          promiseCount += 1;
-        }
-      }
-    }
-
-    cur = high_resolution_clock::now();
-    elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
-  }
-
-  majorityPromised = promiseCount >= (clusterSize / 2);
 }
 
 void
 broadcastPropose(const Messenger& messenger,
-                 const int& clusterSize,
-                 const int& roundId,
                  const std::string& value,
-                 const int& maxAcceptedId,
-                 const std::string& acceptedValue) {
-  const std::string& proposeValue = maxAcceptedId == -1 ? value : acceptedValue;
+                 std::mutex& mutex,
+                 ConsensusManager::Context& context) {
+  std::string proposeValue;
+  int roundId;
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    proposeValue = context.maxAcceptedId == -1 ? value : context.acceptedValue;
+    roundId = context.roundId;
+  }
 
   nlohmann::json proposeDataJson = {{"roundId", roundId},
                                     {"value", proposeValue}};
+
   const std::string& proposeData = proposeDataJson.dump();
   Message propose;
   messenger.setMessage(ConsensusCode::PROPOSE, proposeData, propose);
 
-  for (int i = 0; i < clusterSize; i++) {
-    bool sent;
-    messenger.send(i, propose, sent);
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(propose, 0, clusterSize, false);
+}
 
-    // TODO handle sent
+void
+receivePromises(const Messenger& messenger,
+                std::mutex& mutex,
+                ConsensusManager::Context& context,
+                bool& majorityPromised) {
+  std::this_thread::sleep_for(std::chrono::seconds(PROMISE_WAIT_DURATION));
+
+  int clusterSize = messenger.getClusterSize();
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    majorityPromised = context.promiseCount >= ((clusterSize - 1) / 2);
   }
 }
 
 void
 receiveAccepts(const Messenger& messenger,
-               const int& clusterSize,
-               const int& roundId,
+               std::mutex& mutex,
+               ConsensusManager::Context& context,
                bool& majorityAccepted) {
-  int acceptCount = 0;
   bool messageReceived = false;
 
-  using namespace std::chrono;
-  auto start = high_resolution_clock::now();
-  auto cur = high_resolution_clock::now();
-  int elapsed = 0;
+  int clusterSize = messenger.getClusterSize();
 
-  while (elapsed < ACCEPT_WAIT_DURATION) {
-    int srcNodeId;
-    Message accept;
-    messenger.receiveWithTag(
-        MessageTag::CONSENSUS, messageReceived, srcNodeId, accept);
+  std::this_thread::sleep_for(std::chrono::seconds(ACCEPT_WAIT_DURATION));
 
-    if (messageReceived == true) {
-      ConsensusCode code = accept.getCode<ConsensusCode>();
-      if (code == ConsensusCode::ACCEPT) {
-        acceptCount += 1;
-      }
-    }
-    cur = high_resolution_clock::now();
-    elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    majorityAccepted = context.acceptCount >= ((clusterSize - 1) / 2);
   }
-
-  majorityAccepted = acceptCount >= (clusterSize / 2);
 }
 
 void
 broadcastAccepted(const Messenger& messenger,
-                  const int& clusterSize,
-                  const int& roundId,
-                  const std::string& value) {
-  nlohmann::json acceptedDataJson = {{"roundId", roundId},
-                                    {"value", value}};
+                  const std::string& value,
+                  std::mutex& mutex,
+                  ConsensusManager::Context& context) {
+
+  int roundId;
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    roundId = context.roundId;
+  }
+
+  nlohmann::json acceptedDataJson = {{"roundId", roundId}, {"value", value}};
   const std::string& acceptedData = acceptedDataJson.dump();
+
   Message accepted;
   messenger.setMessage(ConsensusCode::ACCEPTED, acceptedData, accepted);
 
-  for (int i = 0; i < clusterSize; i++) {
-    bool sent;
-    messenger.send(i, accepted, sent);
-
-    // TODO handle sent
-  }
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(accepted, 0, clusterSize, false);
 }
 
 void
-ConsensusManager::startConsensus(const Messenger& messenger,
-                                 const std::string& value,
+ConsensusManager::startConsensus(const std::string& value,
                                  bool& consensusReached) {
   consensusReached = false;
-  int clusterSize = messenger.getClusterSize();
   bool majorityAccepted = false;
   while (majorityAccepted == false) {
-    int roundId;
-    broadcastPrepare(messenger, clusterSize, roundId);
+    broadcastPrepare(m_messenger, m_mutex, m_context);
 
     bool majorityPromised;
-    int maxAcceptedId;
-    std::string acceptedValue;
-    receivePromises(messenger,
-                    clusterSize,
-                    roundId,
-                    majorityPromised,
-                    maxAcceptedId,
-                    acceptedValue);
+    receivePromises(m_messenger, m_mutex, m_context, majorityPromised);
 
     if (majorityPromised == true) {
-      broadcastPropose(
-          messenger, clusterSize, roundId, value, maxAcceptedId, acceptedValue);
+      broadcastPropose(m_messenger, value, m_mutex, m_context);
 
-      receiveAccepts(messenger, clusterSize, roundId, majorityAccepted);
+      receiveAccepts(m_messenger, m_mutex, m_context, majorityAccepted);
 
       if (majorityAccepted == true) {
-        broadcastAccepted(messenger, clusterSize, roundId, value);
+        m_logFileManager.append(value);
+
+        broadcastAccepted(m_messenger, value, m_mutex, m_context);
 
         consensusReached = true;
       }
     }
   }
+
+  m_context = ConsensusManager::Context{};
 }
 
 void
 handlePrepareMessage(const Messenger& messenger,
                      const int& srcNodeId,
                      const int& id,
-                     ConsensusManager::ConsensusContext& context) {
-  if (id > context.maxId) {
-    context.maxId = id;
+                     int& maxRoundId,
+                     std::mutex& mutex,
+                     ConsensusManager::Context& context) {
+  std::unique_lock<std::mutex> lock(mutex);
+
+  if (id > maxRoundId) {
+    maxRoundId = id;
 
     Message promise;
     if (context.valueAccepted == true) {
@@ -213,17 +167,13 @@ handlePrepareMessage(const Messenger& messenger,
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
-      bool sent;
-      messenger.send(srcNodeId, promise, sent);
-      // TODO handle sent
+      messenger.send(srcNodeId, promise);
     } else {
       nlohmann::json promiseDataJson = {{"roundId", id}};
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
-      bool sent;
-      messenger.send(srcNodeId, promise, sent);
-      // TODO handle sent
+      messenger.send(srcNodeId, promise);
     }
   }
 }
@@ -233,12 +183,16 @@ handleProposeMessage(const Messenger& messenger,
                      const int& srcNodeId,
                      const Message& receivedMessage,
                      const int& id,
-                     ConsensusManager::ConsensusContext& context) {
+                     const int& maxRoundId,
+                     std::mutex& mutex,
+                     ConsensusManager::Context& context) {
+  std::unique_lock<std::mutex> lock(mutex);
+
   const std::string& messageData = receivedMessage.getData();
   nlohmann::json messageJson = nlohmann::json::parse(messageData);
 
   int roundId = messageJson.at("roundId");
-  if (roundId == context.maxId) {
+  if (roundId == maxRoundId) {
     context.valueAccepted = true;
     context.acceptedId = roundId;
 
@@ -246,24 +200,21 @@ handleProposeMessage(const Messenger& messenger,
     context.acceptedValue = value;
 
     Message accept;
-    nlohmann::json acceptDataJson = {{"roundId", id},
-                                     {"value", context.acceptedValue}};
+    nlohmann::json acceptDataJson = {{"roundId", id}};
     const std::string& acceptData = acceptDataJson.dump();
 
     messenger.setMessage(ConsensusCode::ACCEPT, acceptData, accept);
-    
-    bool sent;
-    messenger.send(srcNodeId, accept, sent);
-    // TODO handle sent
 
-    context = ConsensusManager::ConsensusContext{};
+    messenger.send(srcNodeId, accept);
   }
 }
 
 void
 handleAcceptedMessage(const Messenger& messenger,
                       const Message& receivedMessage,
-                      LogFileManager& logFileManager) {
+                      LogFileManager& logFileManager,
+                      std::mutex& mutex,
+                      ConsensusManager::Context& context) {
   // TODO check round id
   const std::string& messageData = receivedMessage.getData();
   nlohmann::json messageJson = nlohmann::json::parse(messageData);
@@ -271,6 +222,45 @@ handleAcceptedMessage(const Messenger& messenger,
   std::string value = messageJson.at("value");
 
   logFileManager.append(value);
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    context = ConsensusManager::Context{};
+  }
+}
+
+void
+handlePromiseMessage(const Message& promise,
+                     std::mutex& mutex,
+                     ConsensusManager::Context& context) {
+  const std::string& messageData = promise.getData();
+  nlohmann::json messageJson = nlohmann::json::parse(messageData);
+
+  int id = messageJson.at("roundId");
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (id == context.roundId) {
+      int acceptedId = messageJson.value("acceptedId", -1);
+
+      if (acceptedId > context.maxAcceptedId) {
+        context.acceptedValue = messageJson.value("acceptedValue", "");
+        context.maxAcceptedId = acceptedId;
+      }
+
+      context.promiseCount += 1;
+    }
+  }
+}
+
+void
+handleAcceptMessage(const Message& accept,
+                    std::mutex& mutex,
+                    ConsensusManager::Context& context) {
+  std::unique_lock<std::mutex> lock(mutex);
+
+  // TODO check round id
+  context.acceptCount += 1;
 }
 
 void
@@ -282,30 +272,40 @@ ConsensusManager::handleMessage(const int& srcNodeId,
   int id = receivedMessage.getId();
   switch (code) {
   case ConsensusCode::PREPARE: {
-    handlePrepareMessage(m_messenger, srcNodeId, id, m_context);
+    handlePrepareMessage(
+        m_messenger, srcNodeId, id, m_maxRoundId, m_mutex, m_context);
+    break;
+  }
+  case ConsensusCode::PROMISE: {
+    handlePromiseMessage(receivedMessage, m_mutex, m_context);
     break;
   }
   case ConsensusCode::PROPOSE: {
-    handleProposeMessage(
-        m_messenger, srcNodeId, receivedMessage, id, m_context);
+    handleProposeMessage(m_messenger,
+                         srcNodeId,
+                         receivedMessage,
+                         id,
+                         m_maxRoundId,
+                         m_mutex,
+                         m_context);
+    break;
+  }
+  case ConsensusCode::ACCEPT: {
+    handleAcceptMessage(receivedMessage, m_mutex, m_context);
     break;
   }
   case ConsensusCode::ACCEPTED: {
-    handleAcceptedMessage(m_messenger, receivedMessage, m_logFileManager);
+    handleAcceptedMessage(
+        m_messenger, receivedMessage, m_logFileManager, m_mutex, m_context);
     break;
   }
   }
-}
-
-ConsensusManager::ConsensusContext::ConsensusContext()
-    : maxId(-1), valueAccepted(false), acceptedId(-1), acceptedValue() {
 }
 
 void
 ConsensusManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(ConsensusCode::SHUTDOWN, message);
-  
-  bool sent;
-  m_messenger.send(m_messenger.getRank(), message, sent);
+
+  m_messenger.send(m_messenger.getRank(), message);
 }

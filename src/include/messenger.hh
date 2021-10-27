@@ -96,14 +96,16 @@ public:
   void
   send(const int& dstNodeId,
        const Message& message,
-       bool& sent,
-       const Connection& connection = {MPI_COMM_WORLD},
-       const int& waitDuration = {1000}) const;
+       const Connection& connection = {MPI_COMM_WORLD}) const;
 
   void
-  sendBlock(const int& dstNodeId,
-            const Message& message,
-            const Connection& connection = {MPI_COMM_WORLD}) const;
+  broadcast(const Message& message,
+            const int& start,
+            const int& end = -1,
+            const bool& includeSelf = false) const;
+
+  void
+  selfSend(const Message& message) const;
 
   /**
    * @brief Blocks until a message of specified tag is received.

@@ -118,6 +118,9 @@ add_custom_target(run-server
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-server.sh
   COMMAND printf %80s\\\\n | tr " " "="
+  COMMAND printf %35sLOG-CKSUM%36s\\\\n | tr " " "="
+  COMMAND cksum etc/server/log/* || exit 0
+  COMMAND printf %80s\\\\n | tr " " "="
   DEPENDS server crosscompile-server etc-link shutdown-client clear-repl-server
   )
 

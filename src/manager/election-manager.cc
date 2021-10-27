@@ -7,7 +7,6 @@
 #include "message-info.hh"
 #include "receiver-manager.hh"
 
-#define VICTORY_WAIT_DURATION 5
 #define ELECTION_WAIT_DURATION 5
 #define LOOP_SLEEP_DURATION 10
 
@@ -28,65 +27,50 @@ broadcastElection(Messenger& messenger,
     aliveReceived = false;
     leaderNodeId = -1;
     start = std::chrono::high_resolution_clock::now();
-  } 
+  }
 
   Message electionMessage;
   messenger.setMessage(LeaderElectionCode::ELECTION, electionMessage);
 
   int nodeId = messenger.getRank();
-  int clusterSize = messenger.getClusterSize();
-  for (int i = nodeId + 1; i < clusterSize; i++) {
-    bool sent;
-    messenger.send(i, electionMessage, sent);
-    // TODO handle sent
-  }
+  messenger.broadcast(electionMessage, nodeId + 1);
 }
 
 void
 setLeaderNodeId(const int& value, std::mutex& mutex, int& leaderNodeId) {
   std::unique_lock<std::mutex> lock(mutex);
-  
+
   leaderNodeId = value;
 }
 
 bool
 gotLeader(std::mutex& mutex, const int& leaderNodeId) {
   std::unique_lock<std::mutex> lock(mutex);
-  
+
   return leaderNodeId != -1;
 }
-
 
 void
 declareVictory(const Messenger& messenger,
                std::mutex& mutex,
                int& leaderNodeId) {
-  int nodeId = messenger.getRank();
-  int clusterSize = messenger.getClusterSize();
-
   Message victoryMessage;
   messenger.setMessage(LeaderElectionCode::VICTORY, victoryMessage);
 
-  for (int i = 0; i < clusterSize; i++) {
-    if (i == nodeId) {
-      continue;
-    }
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(victoryMessage, 0, clusterSize, false);
 
-    bool sent;
-    messenger.send(i, victoryMessage, sent);
-    // TODO handle sent
-  }
-
+  int nodeId = messenger.getRank();
   setLeaderNodeId(nodeId, mutex, leaderNodeId);
 }
 
 void
 waitForVictory(Messenger& messenger,
-                std::mutex& mutex,
-                int& leaderNodeId,
-                bool& aliveReceived,
-                timePoint& start,
-                std::shared_ptr<ReceiverManager>& receiverManager) {
+               std::mutex& mutex,
+               int& leaderNodeId,
+               bool& aliveReceived,
+               timePoint& start,
+               std::shared_ptr<ReceiverManager>& receiverManager) {
   using namespace std::chrono;
   auto cur = high_resolution_clock::now();
   int elapsed = 0;
@@ -102,9 +86,8 @@ waitForVictory(Messenger& messenger,
 
       elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
 
-      keepWaiting =
-          (aliveReceived == true) ||
-          (leaderNodeId == -1) && (elapsed < ELECTION_WAIT_DURATION);
+      keepWaiting = (aliveReceived == true) ||
+                    (leaderNodeId == -1) && (elapsed < ELECTION_WAIT_DURATION);
     }
   }
 
@@ -115,6 +98,8 @@ waitForVictory(Messenger& messenger,
         receiverManager->getReceiver<ClientManager>();
     clientManager->enableClientConn();
   }
+
+  std::cout << "leader elected" << std::endl; 
 }
 
 void
@@ -132,7 +117,6 @@ triggerElection(Messenger& messenger,
 
 void
 ElectionManager::startElection() {
-  // TODO spawn thread & detach thread
   std::thread triggerThread = std::thread(triggerElection,
                                           std::ref(m_messenger),
                                           std::ref(m_mutex),
@@ -152,10 +136,8 @@ void
 respondAlive(const Messenger& messenger, const int& srcNodeId) {
   Message aliveMessage;
   messenger.setMessage(LeaderElectionCode::ALIVE, aliveMessage);
-  
-  bool sent;
-  messenger.send(srcNodeId, aliveMessage, sent);
-  // TODO handle sent
+
+  messenger.send(srcNodeId, aliveMessage);
 }
 
 void
@@ -165,37 +147,21 @@ setAliveReceived(const bool& value, std::mutex& mutex, bool& aliveReceived) {
   aliveReceived = value;
 }
 
-
 void
-waitForVictoryMessage(const Messenger& messenger,
-                      std::mutex& mutex,
-                      int& leaderNodeId) {
-  using namespace std::chrono;
-  auto cur = high_resolution_clock::now();
-  auto start = high_resolution_clock::now();
-  int elapsed = 0;
+aliveWait(Messenger& messenger,
+          std::mutex& mutex,
+          bool& aliveReceived,
+          int& leaderNodeId,
+          timePoint& start) {
+  setAliveReceived(true, mutex, aliveReceived);
 
-  bool gotVictory = false;
-  while ((gotVictory == false) && (elapsed < VICTORY_WAIT_DURATION)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
+  std::this_thread::sleep_for(std::chrono::seconds(ELECTION_WAIT_DURATION * 2));
 
-    Message message;
-    int srcNodeId;
-    messenger.receiveWithTagBlock(
-        MessageTag::LEADER_ELECTION, srcNodeId, message);
-
-    LeaderElectionCode code = message.getCode<LeaderElectionCode>();
-
-    switch (code) {
-    case LeaderElectionCode::VICTORY: {
-      setLeaderNodeId(srcNodeId, mutex, leaderNodeId);
-      break;
-    }
-    }
-
-    cur = high_resolution_clock::now();
-    elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
+  if (gotLeader(mutex, leaderNodeId) == false) {
+    broadcastElection(messenger, mutex, leaderNodeId, start, aliveReceived);
   }
+
+  setAliveReceived(false, mutex, aliveReceived);
 }
 
 void
@@ -214,15 +180,13 @@ ElectionManager::handleMessage(const int& srcNodeId,
   }
   case LeaderElectionCode::ALIVE: {
     if (srcNodeId > nodeId) {
-      setAliveReceived(true, m_mutex, m_aliveReceived);
-
-      waitForVictoryMessage(m_messenger, m_mutex, m_leaderNodeId);
-
-      if (gotLeader(m_mutex, m_leaderNodeId) == false) {
-        broadcastElection(m_messenger, m_mutex, m_leaderNodeId, m_start, m_aliveReceived);
-      }
-
-      setAliveReceived(false, m_mutex, m_aliveReceived);
+      std::thread aliveWaitThread = std::thread(aliveWait,
+                                                std::ref(m_messenger),
+                                                std::ref(m_mutex),
+                                                std::ref(m_aliveReceived),
+                                                std::ref(m_leaderNodeId),
+                                                std::ref(m_start));
+      aliveWaitThread.detach();
     }
     break;
   }
@@ -238,13 +202,12 @@ ElectionManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(LeaderElectionCode::SHUTDOWN, message);
 
-  bool sent;
-  m_messenger.send(m_messenger.getRank(), message, sent);
+  m_messenger.send(m_messenger.getRank(), message);
 }
 
 int
 ElectionManager::getLeaderNodeId() {
   std::unique_lock<std::mutex> lock(m_mutex);
-  
+
   return m_leaderNodeId;
 }

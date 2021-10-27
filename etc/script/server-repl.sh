@@ -13,4 +13,4 @@ while [ $isUp -eq 0 ]; do
     isUp=$?
 done
 
-mpirun --ompi-server file:etc/urifile --host localhost bin/shutdown-client
+mpirun --ompi-server file:etc/urifile --host localhost bin/shutdown-client > /dev/null

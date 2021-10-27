@@ -18,19 +18,11 @@ FailureManager::FailureManager(Messenger& messenger,
 
 void
 broadcastPing(Messenger& messenger) {
-  int nodeId = messenger.getRank();
-  int clusterSize = messenger.getClusterSize();
+  Message message;
+  messenger.setMessage(FailureCode::PING, message);
 
-  for (int i = 0; i < clusterSize; i++) {
-    if (i != nodeId) {
-      Message message;
-      messenger.setMessage(FailureCode::PING, message);
-      
-      bool sent;
-      messenger.send(i, message, sent);
-      // TODO handle sent
-    }
-  }
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(message, 0, clusterSize, false);
 }
 
 int
@@ -87,9 +79,7 @@ handleNodeRecovery(int nodeIndex,
   }
 
   int dstNodeId = indexToId(messenger.getRank(), nodeIndex);
-  bool sent;
-  messenger.send(dstNodeId, message, sent);
-  // TODO handle sent
+  messenger.send(dstNodeId, message);
 
   std::this_thread::sleep_for(std::chrono::seconds(RECOVERY_DURATION));
 
@@ -124,18 +114,18 @@ checkTimeStamps(Messenger& messenger,
               .count();
 
       if (failureContext.isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
-        std::cout << "failure detected" << std::endl; 
+        std::cout << "failure detected: " << messenger.getRank() << " nodeIndex: " << i << std::endl; 
         handleNodeFailure(
             i, messenger, failureContext.isAlive, receiverManager);
       } else if (failureContext.isAlive[i] == false &&
                  elapsed < TIMEOUT_DURATION) {
-        std::cout << "recovery detected" << std::endl; 
         std::shared_ptr<ElectionManager> electionManager =
             receiverManager->getReceiver<ElectionManager>();
         bool noCurrentRecovery = failureContext.curRecoveryId == -1;
         int leaderNodeId = electionManager->getLeaderNodeId();
         int nodeId = messenger.getRank();
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
+          std::cout << "recovery detected: " << messenger.getRank() << " nodeIndex: " << i << std::endl; 
           recoveryThread = std::thread(handleNodeRecovery,
                                        i,
                                        std::ref(messenger),
@@ -212,13 +202,8 @@ broadcastRecovered(Messenger& messenger, const int& recoveredNodeId) {
   Message message;
   messenger.setMessage(FailureCode::RECOVERED, jsonString, message);
 
-  for (int i = 0; i < messenger.getClusterSize(); i++) {
-    if (i != messenger.getRank()) {
-      bool sent;
-      messenger.send(i, message, sent);
-      // TODO handle sent
-    }
-  }
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(message, 0, clusterSize, false);
 }
 
 void
@@ -306,9 +291,7 @@ handleState(const int& srcNodeId,
   Message message;
   messenger.setMessage(FailureCode::STATE_UPDATED, jsonString, message);
 
-  bool sent;
-  messenger.send(srcNodeId, message, sent);
-  // TODO handle sent
+  messenger.send(srcNodeId, message);
 }
 
 void
@@ -336,12 +319,10 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::STATE: {
-    std::cout << "state" << std::endl; 
     handleState(srcNodeId, receivedMessage, m_messenger, m_logFileManager);
     break;
   }
   case FailureCode::STATE_UPDATED: {
-    std::cout << "state updated" << std::endl; 
     handleStateUpdate(srcNodeId,
                       receivedMessage,
                       m_messenger,
@@ -353,7 +334,6 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::RECOVERED: {
-    std::cout << "recovered" << std::endl; 
     handleRecovered(receivedMessage,
                     m_messenger,
                     m_context.mutex,
@@ -368,14 +348,14 @@ void
 FailureManager::stopReceiver() {
   Message message;
   m_messenger.setMessage(FailureCode::SHUTDOWN, message);
-  bool sent;
-  m_messenger.send(m_messenger.getRank(), message, sent);
+
+  m_messenger.send(m_messenger.getRank(), message);
 
   {
     std::unique_lock<std::mutex> lock(m_context.mutex);
     m_pingThreadIsUp = false;
   }  
-  
+
   m_pingThread.join();
 }
 

@@ -52,7 +52,7 @@ connectToServer(Messenger& messenger, Messenger::Connection& serverConnection) {
 
   Message message;
   messenger.setMessage(ClientCode::CONNECT, message);
-  messenger.sendBlock(0, message, serverConnection);
+  messenger.send(0, message, serverConnection);
 }
 
 void
@@ -60,7 +60,7 @@ disconnect(Messenger& messenger, Messenger::Connection& serverConnection) {
   Message message;
   messenger.setMessage(ClientCode::DISCONNECT, message);
 
-  messenger.sendBlock(0, message, serverConnection);
+  messenger.send(0, message, serverConnection);
 
   messenger.disconnect(serverConnection);
 }
@@ -80,7 +80,7 @@ replicate(Messenger& messenger,
 
     messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
 
-    messenger.sendBlock(0, message, serverConnection);
+    messenger.send(0, message, serverConnection);
 
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
@@ -134,8 +134,8 @@ Client::shutdownServer(int argc, char* argv[]) {
   Message message;
   m_messenger.setMessage(ClientCode::SHUTDOWN, message);
 
-  m_messenger.sendBlock(0, message, m_serverConnection);
-  m_messenger.sendBlock(0, message, m_serverConnection);
+  m_messenger.send(0, message, m_serverConnection);
+  m_messenger.send(0, message, m_serverConnection);
 
   disconnect(m_messenger, m_serverConnection);
 

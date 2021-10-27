@@ -4,54 +4,55 @@
 #include <unordered_map>
 
 enum class MessageTag {
-  LEADER_ELECTION,
-  CONSENSUS,
-  REPL,
-  FAILURE_DETECTION,
-  CLIENT,
-  SIZE
+  LEADER_ELECTION = 0,
+  CONSENSUS = 1,
+  REPL = 2,
+  FAILURE_DETECTION = 3,
+  CLIENT = 4,
+  SIZE = 5
 };
 
-enum class LeaderElectionCode { SHUTDOWN, ELECTION, ALIVE, VICTORY, SIZE };
+enum class LeaderElectionCode {
+  SHUTDOWN = 0,
+  ELECTION = 1,
+  ALIVE = 2,
+  VICTORY = 3
+};
 
 enum class ConsensusCode {
-  SHUTDOWN,
-  PREPARE,
-  PROMISE,
-  PROPOSE,
-  ACCEPT,
-  ACCEPTED,
-  SIZE
+  SHUTDOWN = 0,
+  PREPARE = 1,
+  PROMISE = 2,
+  PROPOSE = 3,
+  ACCEPT = 4,
+  ACCEPTED = 5
 };
 
 enum class FailureCode {
-  SHUTDOWN,
-  PING,
-  STATE,
-  STATE_UPDATED,
-  RECOVERED,
-  SIZE
+  SHUTDOWN = 0,
+  PING = 1,
+  STATE = 2,
+  STATE_UPDATED = 3,
+  RECOVERED = 4
 };
 
 enum class ClientCode {
-  SHUTDOWN,
-  PORT,
-  CONNECT,
-  DISCONNECT,
-  REPLICATE,
-  SUCCESS,
-  SIZE
+  SHUTDOWN = 0,
+  PORT = 1,
+  CONNECT = 2,
+  DISCONNECT = 3,
+  REPLICATE = 4,
+  SUCCESS = 5
 };
 
 enum class ReplCode {
-  SHUTDOWN,
-  START,
-  SPEED_LOW,
-  SPEED_MEDIUM,
-  SPEED_HIGH,
-  CRASH,
-  RECOVER,
-  SIZE
+  SHUTDOWN = 0,
+  START = 1,
+  SPEED_LOW = 2,
+  SPEED_MEDIUM = 3,
+  SPEED_HIGH = 4,
+  CRASH = 5,
+  RECOVER = 6
 };
 
 static std::unordered_map<std::string, ReplCode> const replParseMap = {

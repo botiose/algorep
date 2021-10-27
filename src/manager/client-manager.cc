@@ -28,16 +28,18 @@ ClientManager::handleMessage(const int& srcNodeId,
     nlohmann::json dataJson = nlohmann::json::parse(data);
     std::string value;
     dataJson.at("value").get_to(value);
+    
+    std::shared_ptr<ConsensusManager> consensusManager =
+        m_receiverManager->getReceiver<ConsensusManager>();
 
     bool consensusReached;
-    ConsensusManager::startConsensus(m_messenger, value, consensusReached);
+    consensusManager->startConsensus(value, consensusReached);
 
     if (consensusReached == true) {
       Message message;
       m_messenger.setMessage(ClientCode::SUCCESS, message);
-      bool sent;
-      m_messenger.send(srcNodeId, message, sent, connection);
-      // TODO handle sent
+
+      m_messenger.send(srcNodeId, message, connection);
     }
 
     break;
@@ -120,9 +122,7 @@ sendPort(const Messenger& messenger, const std::string& port) {
   Message message;
   messenger.setMessage(ClientCode::PORT, messageString, message);
 
-  bool sent;
-  messenger.send(prevNodeId, message, sent);
-  // TODO handle sent
+  messenger.send(prevNodeId, message);
 }
 
 void
@@ -151,11 +151,8 @@ exchangePorts(const Messenger& messenger,
 
 void
 shutdownNeighbor(const Messenger& messenger,
-                 std::shared_ptr<ReceiverManager> receiverManager,
+                 std::shared_ptr<ElectionManager> electionManager,
                  const std::string& nextNodePort) {
-  std::shared_ptr<ElectionManager> electionManager =
-      receiverManager->getReceiver<ElectionManager>();
-
   int nodeId = messenger.getRank();
   int clusterSize = messenger.getClusterSize();
 
@@ -165,8 +162,10 @@ shutdownNeighbor(const Messenger& messenger,
 
     Message message;
     messenger.setMessage(ClientCode::SHUTDOWN, message);
-    messenger.sendBlock(0, message, connection);
-    messenger.sendBlock(0, message, connection);
+    messenger.send(0, message, connection);
+    messenger.send(0, message, connection);
+
+    messenger.disconnect(connection);
   }
 }
 
@@ -200,9 +199,16 @@ ClientManager::startReceiver() {
 
   m_acceptConnThread.join();
 
+  for (Messenger::Connection& connection: m_clientConnections) {
+    m_messenger.disconnect(connection);
+  }
+
+  std::shared_ptr<ElectionManager> electionManager =
+      m_receiverManager->getReceiver<ElectionManager>();
+
   m_messenger.closePort(m_port);
 
-  shutdownNeighbor(m_messenger, m_receiverManager, m_nextNodePort);
+  shutdownNeighbor(m_messenger, electionManager, m_nextNodePort);
 }
 
 void

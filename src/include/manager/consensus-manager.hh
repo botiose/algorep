@@ -11,6 +11,7 @@
 #pragma once
 
 #include <string>
+#include <mutex>
 
 #include "messenger.hh"
 #include "message-receiver.hh"
@@ -38,9 +39,8 @@ public:
    * @param[in] clusterSize number of nodes in the cluster
    * @param[in] value value get a consensus on
    */
-  static void
-  startConsensus(const Messenger& messenger,
-                 const std::string& value, 
+  void
+  startConsensus(const std::string& value, 
                  bool& consensusReached);
 
   /**
@@ -61,19 +61,16 @@ public:
                 const Message& receivedMessage,
                 const Messenger::Connection& connection) final;
 
-  struct ConsensusContext {
-    /**
-     * @brief Constructor for the ConsensusContext() struct.
-     *
-     *
-     * @return ConsensusContext() instance.
-     */
-    ConsensusContext();
+  struct Context {
+    Context() = default;
 
-    int maxId = -1;             /**< max id encoutered in the current round */
+    int roundId = -1;
+    int maxAcceptedId = -1;     /**< max id found in promise responses */
     bool valueAccepted = false; /**< whether a value was accepted this round */
     int acceptedId = -1;        /**< id of the associated accepted round */
-    std::string acceptedValue;  /**< value of the associated accepted round */
+    std::string acceptedValue = "";  /**< value of the associated accepted round */
+    int promiseCount = 0;
+    int acceptCount = 0;
   };
 
   void
@@ -82,5 +79,8 @@ public:
 private:
   LogFileManager& m_logFileManager;
 
-  ConsensusContext m_context; /**< current round state/context */
+  std::mutex m_mutex;
+  Context m_context; /**< current round state/context */
+
+  int m_maxRoundId = -1;
 };

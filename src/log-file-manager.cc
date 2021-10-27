@@ -16,12 +16,17 @@ LogFileManager::LogFileManager(const int& nodeId) {
 void
 writeWithMode(const std::string& filePath,
               const std::string& str,
-              const std::ios_base::openmode& mode) {
+              const std::ios_base::openmode& mode,
+              const bool& newline) {
   std::ofstream ofs(filePath, mode);
 
   std::cout << str << std::endl;
 
-  ofs << str << std::endl;
+  ofs << str;
+
+  if (newline == true) {
+    ofs << std::endl;
+  }
 
   ofs.close();
 }
@@ -30,13 +35,13 @@ void
 LogFileManager::append(const std::string& entry) {
   std::unique_lock<std::mutex> lock(m_mutex);
 
-  writeWithMode(m_logFilePath, entry, std::ios_base::app);
+  writeWithMode(m_logFilePath, entry, std::ios_base::app, true);
 }
 
 void
 LogFileManager::replace(const std::string& contents) {
   std::unique_lock<std::mutex> lock(m_mutex);
-  writeWithMode(m_logFilePath, contents, std::ios_base::out);
+  writeWithMode(m_logFilePath, contents, std::ios_base::out, false);
 }
 
 void

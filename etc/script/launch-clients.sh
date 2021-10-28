@@ -36,9 +36,9 @@ for archs in $(jq -rc ".nodes | to_entries[]" <<< "$config"); do
             ./../../etc/script/gen-commands.sh ../../etc/client/"$clientDir"/command.txt
             
             if [ "$address" == "localhost" ]; then
-                mpirun --ompi-server file:../../etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir" &
+                mpirun --ompi-server file:../../etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir" "$coreCount" &
             else
-                ssh "$address" "cd $projectPath && mpirun --ompi-server file:etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir""
+                ssh "$address" "cd $projectPath && mpirun --ompi-server file:etc/urifile --host localhost $v "$projectPath/build/$arch/bin/client" "$clientDir" "$coreCount""
             fi
             
             clientId=$((clientId+1))

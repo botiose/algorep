@@ -20,3 +20,5 @@ while [ $isUp -eq 0 ]; do
     $(test "$line" != "shutdown")
     isUp=$?
 done
+
+echo "shutdown" >> "etc/turn.txt"

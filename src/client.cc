@@ -8,8 +8,10 @@
 
 #define RESPONSE_WAIT_DURATION 60
 #define LOOP_SLEEP_DURATION 50
+#define TURN_SLEEP_DURATION 1
 
 #define REPL_MSG_BASE_FILEPATH "etc/client/"
+#define TURN_FILEPATH "etc/turn.txt"
 #define REPL_FILE "repl.txt"
 #define COMMAND_FILE "command.txt"
 
@@ -19,6 +21,9 @@ Client::init(int argc, char* argv[]) {
   m_messenger.start(argc, argv);
 
   m_receiverManager = std::make_shared<ReceiverManager>();
+
+  m_clientId = std::stoi(argv[1]);
+  m_clientCount = std::stoi(argv[2]);
 
   m_baseDir = REPL_MSG_BASE_FILEPATH;
   m_baseDir.append(argv[1]);
@@ -134,11 +139,37 @@ Client::shutdownServer(int argc, char* argv[]) {
 }
 
 void
+waitForTurn(std::ifstream& ifs, const int& clientId) {
+  bool isUp = true;
+  while (isUp == true) {
+    std::string line;
+    std::getline(ifs, line);
+    ifs.clear();
+
+    if (line.empty() == false) {
+      isUp = line != "shutdown" && std::stoi(line) != clientId;
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(TURN_SLEEP_DURATION));
+  }
+}
+
+void
+setTurn(const int& clientId, const int& clientCount) {
+  std::ofstream ofs(TURN_FILEPATH, std::ios_base::app);  
+
+  ofs << ((clientId + 1) % clientCount) << std::endl;
+
+  ofs.close();
+}
+
+void
 Client::replicateCommands() {
   std::string commandFilePath(m_baseDir);
   commandFilePath.append(COMMAND_FILE);
 
-  std::ifstream ifs(commandFilePath);
+  std::ifstream commandIfs(commandFilePath);
+  std::ifstream turnIfs(TURN_FILEPATH);
 
   std::shared_ptr<ReplManager> replManager =
       m_receiverManager->getReceiver<ReplManager>();
@@ -148,16 +179,22 @@ Client::replicateCommands() {
   bool doneReading;
 
   do {
-    std::getline(ifs, line);
+    std::getline(commandIfs, line);
 
     doneReading = line.empty();
 
     if (doneReading == false) {
+
+      waitForTurn(turnIfs, m_clientId);
+
       replicate(m_messenger, m_serverConnection, line);
+
+      setTurn(m_clientId, m_clientCount);
 
       replManager->sleep();
     }
   } while (doneReading == false);
 
-  ifs.close();
+  commandIfs.close();
+  turnIfs.close();
 }

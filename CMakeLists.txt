@@ -94,7 +94,8 @@ add_custom_target(etc-link
   )
 
 add_custom_target(clear-repl-client
-  rm -rf etc/client/*
+  COMMAND rm -rf etc/client/*
+  COMMAND echo 0 > etc/turn.txt
   DEPENDS etc-link
   )
 

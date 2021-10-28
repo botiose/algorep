@@ -66,6 +66,9 @@ public:
   shutdownServer(int argc, char* argv[]);
 
 private:
+  int m_clientId;
+  int m_clientCount;
+
   Messenger m_messenger;
 
   Messenger::Connection m_serverConnection;

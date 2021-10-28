@@ -1,3 +1,15 @@
+/**
+ * @file   election-manager.hh
+ * @author Otiose email
+ * @date   Thu Oct 28 10:15:05 2021
+ *
+ * @brief  Defines the ElectionManager class.
+ *
+ * This class encapsulates all election related calls. It derives from the
+ * MessageReceiver class and handles messages with the
+ * MessageTag::LEADER_ELECTION tag.
+ *
+ */
 #pragma once
 
 #include <mutex>
@@ -13,6 +25,14 @@ class ElectionManager : public MessageReceiver {
 public:
   inline static MessageTag managedTag = MessageTag::LEADER_ELECTION;
 
+  /** 
+   * @brief ElectionManager constructor.
+   * 
+   * @param[in] messenger node's messenger
+   * @param[in] receiverManager receiver manager
+   * 
+   * @return ElectionManager instance
+   */
   ElectionManager(Messenger& messenger,
                   std::shared_ptr<ReceiverManager> receiverManager);
 
@@ -34,21 +54,32 @@ public:
   handleMessage(const int& srcNodeId,
                 const Message& receivedMessage,
                 const Messenger::Connection& connection);
-
+  /** 
+   * @brief Stops the receiver
+   * 
+   */
   void
   stopReceiver() final;
 
-  // thread safety left to the user
+  /** 
+   * @brief Returns the leader's node id.
+   * 
+   * @return leader's node id
+   */
   int
   getLeaderNodeId();
 
+  /** 
+   * @brief Triggers an elections.
+   * 
+   */
   void
   startElection();
 
+private:
   void
   init() final;
 
-private:
   std::mutex m_mutex;
 
   int m_leaderNodeId = -1;

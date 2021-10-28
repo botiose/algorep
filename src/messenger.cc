@@ -74,10 +74,11 @@ Messenger::send(const int& dstNodeId,
     int tag = message.getTagInt();
 
     if (tag != 3) {
-      std::cout << "[o]"
+      std::cout << "[i]"
                 << "[" << tag << "]"
                 << "[" << m_rank << "]"
-                << "[" << dstNodeId << "]: " << messageString << std::endl
+                << "[" << dstNodeId << "]"
+                << "[o]: " << messageString << std::endl
                 << std::flush;
     }
 
@@ -116,6 +117,7 @@ receive(const int& nodeId,
 
   char messageChar[MAX_MESSAGE_SIZE];
 
+
   MPI_Recv(&messageChar,
            MAX_MESSAGE_SIZE,
            MPI_CHAR,
@@ -123,19 +125,18 @@ receive(const int& nodeId,
            tag,
            connection.connection,
            &status);
-
   std::string messageString(messageChar);
   deserializeMessage(passKey, messageString, status.MPI_TAG, message, isValid);
 
   srcNodeId = status.MPI_SOURCE;
 
-  if (tag != 3) {
-    std::cout << "[i]"
-              << "[" << tag << "]"
-              << "[" << srcNodeId << "]"
-              << "[" << nodeId << "]: " << messageString << std::endl
-              << std::flush;
-  }
+  // if (tag != 3) {
+  //   std::cout << "[i]"
+  //             << "[" << tag << "]"
+  //             << "[" << srcNodeId << "]"
+  //             << "[" << nodeId << "]: " << messageString << std::endl
+  //             << std::flush;
+  // }
 }
 
 void
@@ -175,15 +176,6 @@ hasPendingWithTag(const MessageTag& messageTag,
 }
 
 void
-Messenger::probeTagBlock(const Connection& connection,
-                         MessageTag& messageTag) const {
-  MPI_Status status;
-  MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, connection.connection, &status);
-
-  messageTag = static_cast<MessageTag>(status.MPI_TAG);
-}
-
-void
 Messenger::receiveWithTag(const MessageTag& messageTag,
                           bool& messageReceived,
                           int& srcNodeId,
@@ -203,7 +195,7 @@ Messenger::receiveWithTag(const MessageTag& messageTag,
 }
 
 void
-Messenger::start(int argc, char** argv, int& rank, int& clusterSize) {
+Messenger::start(int argc, char** argv) {
   int provided;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 
@@ -213,14 +205,12 @@ Messenger::start(int argc, char** argv, int& rank, int& clusterSize) {
   }
 
   MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
-  rank = m_rank;
 
-  MPI_Comm_size(MPI_COMM_WORLD, &clusterSize);
-  m_clusterSize = clusterSize;
+  MPI_Comm_size(MPI_COMM_WORLD, &m_clusterSize);
 
-  m_processIsAlive.resize(clusterSize - 1);
+  m_processIsAlive.resize(m_clusterSize - 1);
 
-  for (int i = 0; i < clusterSize - 1; i++) {
+  for (int i = 0; i < m_clusterSize - 1; i++) {
     m_processIsAlive[i] = true;
   }
 }
@@ -258,22 +248,11 @@ Messenger::publishPort(const std::string& port) const {
 }
 
 void
-Messenger::unpublishPort(const std::string& port) const {
-  MPI_Info scopeInfo;
-  MPI_Info_create(&scopeInfo);
-  MPI_Info_set(scopeInfo, "ompi_global_scope", "true");
-
-  MPI_Unpublish_name(SERVER_NAME, scopeInfo, port.c_str());
-
-  std::cout << "messenger unpusblished" << std::endl;
-}
-
-void
 Messenger::acceptConnBlock(const std::string& port,
                            Messenger::Connection& connection) const {
   MPI_Comm_accept(
       port.c_str(), MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
-  std::cout << "connection accepted" << std::endl;
+  std::cout << "accepted" << std::endl;
 }
 
 void

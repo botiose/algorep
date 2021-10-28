@@ -12,7 +12,7 @@
 
 void
 Node::init(int argc, char** argv) {
-  m_messenger.start(argc, argv, m_nodeId, m_clusterSize);
+  m_messenger.start(argc, argv);
   m_receiverManager = std::make_shared<ReceiverManager>();
 
   LogFileManager logFileManager(m_messenger.getRank());
@@ -27,16 +27,14 @@ Node::init(int argc, char** argv) {
       m_messenger, m_receiverManager, REPL_MSG_FILEPATH);
 
   std::shared_ptr<ElectionManager> electionManager =
-      std::make_shared<ElectionManager>(
-          m_messenger, m_receiverManager);
+      std::make_shared<ElectionManager>(m_messenger, m_receiverManager);
   std::shared_ptr<ClientManager> clientManager =
       std::make_shared<ClientManager>(m_messenger, m_receiverManager);
 
   m_receiverManager->startReceiver(replManager);
   m_receiverManager->startReceiver(electionManager);
   m_receiverManager->startReceiver(consensusManager);
-  m_receiverManager->startReceiver(failureManager)
-    ;
+  m_receiverManager->startReceiver(failureManager);
   m_receiverManager->startReceiver(clientManager);
 
   m_receiverManager->waitForReceiver(MessageTag::REPL);

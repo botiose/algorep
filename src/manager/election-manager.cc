@@ -33,6 +33,7 @@ broadcastElection(Messenger& messenger,
   messenger.setMessage(LeaderElectionCode::ELECTION, electionMessage);
 
   int nodeId = messenger.getRank();
+
   messenger.broadcast(electionMessage, nodeId + 1);
 }
 
@@ -96,6 +97,7 @@ waitForVictory(Messenger& messenger,
 
     std::shared_ptr<ClientManager> clientManager =
         receiverManager->getReceiver<ClientManager>();
+
     clientManager->enableClientConn();
   }
 

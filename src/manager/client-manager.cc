@@ -48,65 +48,32 @@ ClientManager::handleMessage(const int& srcNodeId,
 }
 
 void
-ClientManager::receivePendingMessages(bool& isUp) {
-  std::unique_lock<std::mutex> lock(m_connectionMutex);
-
-  int i = 0;
-
-  auto connection = m_clientConnections.begin();
-
-  // iterate over every client connection
-  while (isUp == true && connection != m_clientConnections.end()) {
-    int srcNodeId;
-    Message receivedMessage;
-    bool messageReceived;
-
-    m_messenger.receiveWithTag(MessageTag::CLIENT,
-                               messageReceived,
-                               srcNodeId,
-                               receivedMessage,
-                               *connection);
-
-    if (messageReceived == true) {
-      // message code 0 is SHUTDOWN for all message tags
-      isUp = receivedMessage.getCodeInt() != 0;
-      if (isUp == true) {
-        if (receivedMessage.getCode<ClientCode>() != ClientCode::DISCONNECT) {
-          this->handleMessage(srcNodeId, receivedMessage, *connection);
-        } else {
-          m_messenger.disconnect(*connection);
-          connection = m_clientConnections.erase(connection);
-        }
-      }
-    }
-
-    i += 1;
-    connection++;
-  }
+acceptConnection(Messenger& messenger,
+                 const std::string& port,
+                 Messenger::Connection& clientConnection) {
+  messenger.acceptConnBlock(port, clientConnection);
 }
 
 void
-acceptConnection(Messenger& messenger,
-                 const std::string& port,
-                 std::list<Messenger::Connection>& clientConnections,
-                 std::mutex& connectionMutex) {
-  bool isUp = true;
+ClientManager::receivePendingMessages(bool& isUp) {
   while (isUp == true) {
-    Messenger::Connection connection;
-    messenger.acceptConnBlock(port, connection);
-
     int srcNodeId;
-    Message message;
-    messenger.receiveWithTagBlock(
-        MessageTag::CLIENT, srcNodeId, message, connection);
+    Message receivedMessage;
 
-    {
-      std::unique_lock<std::mutex> lock(connectionMutex);
+    m_messenger.receiveWithTagBlock(
+        MessageTag::CLIENT, srcNodeId, receivedMessage, m_clientConnection);
 
-      clientConnections.push_back(connection);
+    // message code 0 is SHUTDOWN for all message tags
+    isUp = receivedMessage.getCodeInt() != 0;
+    if (isUp == true) {
+      if (receivedMessage.getCode<ClientCode>() != ClientCode::DISCONNECT) {
+        this->handleMessage(srcNodeId, receivedMessage, m_clientConnection);
+      } else {
+        m_messenger.disconnect(m_clientConnection);
+
+        acceptConnection(m_messenger, m_port, m_clientConnection);
+      }
     }
-
-    isUp = message.getCode<ClientCode>() != ClientCode::SHUTDOWN;
   }
 }
 
@@ -163,7 +130,6 @@ shutdownNeighbor(const Messenger& messenger,
     Message message;
     messenger.setMessage(ClientCode::SHUTDOWN, message);
     messenger.send(0, message, connection);
-    messenger.send(0, message, connection);
 
     messenger.disconnect(connection);
   }
@@ -175,33 +141,24 @@ ClientManager::startReceiver() {
 
   exchangePorts(m_messenger, m_port, m_nextNodePort);
 
-  m_acceptConnThread = std::thread(acceptConnection,
-                                   std::ref(m_messenger),
-                                   std::ref(m_port),
-                                   std::ref(m_clientConnections),
-                                   std::ref(m_connectionMutex));
-
   std::shared_ptr<ReplManager> replManager =
       m_receiverManager->getReceiver<ReplManager>();
   std::shared_ptr<FailureManager> failureManager =
       m_receiverManager->getReceiver<FailureManager>();
 
+  acceptConnection(m_messenger, m_port, m_clientConnection);
 
   bool isUp = true;
   while (isUp == true) {
     replManager->sleep();
-    failureManager->sleep();
+    failureManager->clientThreadSleep();
 
     this->receivePendingMessages(isUp);
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
   }
 
-  m_acceptConnThread.join();
-
-  for (Messenger::Connection& connection: m_clientConnections) {
-    m_messenger.disconnect(connection);
-  }
+  m_messenger.disconnect(m_clientConnection);
 
   std::shared_ptr<ElectionManager> electionManager =
       m_receiverManager->getReceiver<ElectionManager>();
@@ -209,14 +166,10 @@ ClientManager::startReceiver() {
   m_messenger.closePort(m_port);
 
   shutdownNeighbor(m_messenger, electionManager, m_nextNodePort);
+
 }
 
 void
 ClientManager::enableClientConn() {
   m_messenger.publishPort(m_port);
-}
-
-void
-ClientManager::disableClientConn() {
-  m_messenger.unpublishPort(m_port);
 }

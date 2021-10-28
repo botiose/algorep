@@ -360,7 +360,7 @@ FailureManager::stopReceiver() {
 }
 
 void
-FailureManager::sleep() {
+FailureManager::clientThreadSleep() {
   std::unique_lock<std::mutex> lock(m_context.clientConnMutex);
 
   if (m_context.blockClientConn == true) {

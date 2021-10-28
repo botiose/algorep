@@ -5,7 +5,9 @@
  *
  * @brief  Declares the ConsensusManager class.
  *
- * This class encapsulates all consensus related calls.
+ * This class encapsulates all consensus related calls. It derives from the
+ * MessageReceiver class and handles messages with the MessageTag::CONSENSUS
+ * tag.
  *
  */
 #pragma once
@@ -22,6 +24,15 @@ class ConsensusManager : public MessageReceiver {
 public:
   inline static MessageTag managedTag = MessageTag::CONSENSUS;
 
+  /** 
+   * @brief ConsensusManager Constructor. 
+   * 
+   * @param[in] messenger node's messenger
+   * @param[in] receiverManager receiver manager
+   * @param[in] logFileManager log file manager
+   * 
+   * @return ConsensusManager instance
+   */
   ConsensusManager(Messenger& messenger,
                    std::shared_ptr<ReceiverManager> receiverManager,
                    LogFileManager& logFileManager);
@@ -64,15 +75,19 @@ public:
   struct Context {
     Context() = default;
 
-    int roundId = -1;
-    int maxAcceptedId = -1;     /**< max id found in promise responses */
-    bool valueAccepted = false; /**< whether a value was accepted this round */
-    int acceptedId = -1;        /**< id of the associated accepted round */
-    std::string acceptedValue = "";  /**< value of the associated accepted round */
-    int promiseCount = 0;
-    int acceptCount = 0;
+    int roundId = -1;               /**< id of the current consensus round */
+    int maxAcceptedId = -1;         /**< max id found in promise responses */
+    bool valueAccepted = false;     /**< whether a value was accepted */
+    int acceptedId = -1;            /**< id of the associated accepted round */
+    std::string acceptedValue = ""; /**< value of the associated accepted id */
+    int promiseCount = 0; /**< number of promises received this round */
+    int acceptCount = 0;  /**< number of accepts received this round */
   };
 
+  /** 
+   * @brief Stops the receiver
+   * 
+   */
   void
   stopReceiver() final;
 
@@ -80,7 +95,7 @@ private:
   LogFileManager& m_logFileManager;
 
   std::mutex m_mutex;
-  Context m_context; /**< current round state/context */
+  Context m_context;
 
   int m_maxRoundId = -1;
 };

@@ -20,6 +20,42 @@ ConsensusManager::ConsensusManager(
 }
 
 void
+receiveAccepts(const Messenger& messenger,
+               std::mutex& mutex,
+               ConsensusManager::Context& context,
+               bool& majorityAccepted) {
+  bool messageReceived = false;
+
+  int clusterSize = messenger.getClusterSize();
+
+  std::this_thread::sleep_for(std::chrono::seconds(ACCEPT_WAIT_DURATION));
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+
+    majorityAccepted = context.acceptCount >= ((clusterSize - 1) / 2);
+  }
+
+}
+
+void
+receivePromises(const Messenger& messenger,
+                std::mutex& mutex,
+                ConsensusManager::Context& context,
+                bool& majorityPromised) {
+  std::this_thread::sleep_for(std::chrono::seconds(PROMISE_WAIT_DURATION));
+
+  int clusterSize = messenger.getClusterSize();
+
+
+  {
+    std::unique_lock<std::mutex> lock(mutex);
+    majorityPromised = context.promiseCount >= ((clusterSize - 1) / 2);
+  }
+
+}
+
+void
 broadcastPrepare(const Messenger& messenger,
                  std::mutex& mutex,
                  ConsensusManager::Context& context) {
@@ -62,44 +98,10 @@ broadcastPropose(const Messenger& messenger,
 }
 
 void
-receivePromises(const Messenger& messenger,
-                std::mutex& mutex,
-                ConsensusManager::Context& context,
-                bool& majorityPromised) {
-  std::this_thread::sleep_for(std::chrono::seconds(PROMISE_WAIT_DURATION));
-
-  int clusterSize = messenger.getClusterSize();
-
-  {
-    std::unique_lock<std::mutex> lock(mutex);
-    majorityPromised = context.promiseCount >= ((clusterSize - 1) / 2);
-  }
-}
-
-void
-receiveAccepts(const Messenger& messenger,
-               std::mutex& mutex,
-               ConsensusManager::Context& context,
-               bool& majorityAccepted) {
-  bool messageReceived = false;
-
-  int clusterSize = messenger.getClusterSize();
-
-  std::this_thread::sleep_for(std::chrono::seconds(ACCEPT_WAIT_DURATION));
-
-  {
-    std::unique_lock<std::mutex> lock(mutex);
-
-    majorityAccepted = context.acceptCount >= ((clusterSize - 1) / 2);
-  }
-}
-
-void
 broadcastAccepted(const Messenger& messenger,
                   const std::string& value,
                   std::mutex& mutex,
                   ConsensusManager::Context& context) {
-
   int roundId;
   {
     std::unique_lock<std::mutex> lock(mutex);
@@ -127,7 +129,6 @@ ConsensusManager::startConsensus(const std::string& value,
 
     bool majorityPromised;
     receivePromises(m_messenger, m_mutex, m_context, majorityPromised);
-
     if (majorityPromised == true) {
       broadcastPropose(m_messenger, value, m_mutex, m_context);
 

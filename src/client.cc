@@ -16,9 +16,7 @@
 
 void
 Client::init(int argc, char* argv[]) {
-  int rank;
-  int clusterSize;
-  m_messenger.start(argc, argv, rank, clusterSize);
+  m_messenger.start(argc, argv);
 
   m_receiverManager = std::make_shared<ReceiverManager>();
 
@@ -49,10 +47,6 @@ connectMessenger(Messenger& messenger,
 void
 connectToServer(Messenger& messenger, Messenger::Connection& serverConnection) {
   connectMessenger(messenger, serverConnection);
-
-  Message message;
-  messenger.setMessage(ClientCode::CONNECT, message);
-  messenger.send(0, message, serverConnection);
 }
 
 void
@@ -123,9 +117,7 @@ Client::destroy() {
 
 void
 Client::shutdownServer(int argc, char* argv[]) {
-  int rank;
-  int clusterSize;
-  m_messenger.start(argc, argv, rank, clusterSize);
+  m_messenger.start(argc, argv);
 
   m_receiverManager = std::make_shared<ReceiverManager>();
 
@@ -134,7 +126,6 @@ Client::shutdownServer(int argc, char* argv[]) {
   Message message;
   m_messenger.setMessage(ClientCode::SHUTDOWN, message);
 
-  m_messenger.send(0, message, m_serverConnection);
   m_messenger.send(0, message, m_serverConnection);
 
   disconnect(m_messenger, m_serverConnection);

@@ -19,15 +19,3 @@ ReceiverManager::stopReceiver(const MessageTag& tag) {
     m_isActive[receiverIndex] = false;
   }
 }
-
-void
-ReceiverManager::stopReceiverWait(const MessageTag& tag) {
-  int receiverIndex = static_cast<int>(tag);
-
-  if (m_isActive[receiverIndex] == true) {
-    m_receivers[receiverIndex]->stopReceiver();
-    m_threads[receiverIndex].join();
-
-    m_isActive[receiverIndex] = false;
-  }
-}

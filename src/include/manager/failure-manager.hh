@@ -1,3 +1,15 @@
+/**
+ * @file   failure-manager.hh
+ * @author Otiose email
+ * @date   Thu Oct 28 10:24:29 2021
+ *
+ * @brief  Declares the FailureManager class.
+ *
+ * This class encapsulates all failure related calls. It derives from the
+ * MessageReceiver class and handles messages with the
+ * MessageTag::FAILURE_DETECTION tag.
+ *
+ */
 #pragma once
 
 #include <vector>
@@ -16,20 +28,51 @@ class FailureManager : public MessageReceiver {
 public:
   inline static MessageTag managedTag = MessageTag::FAILURE_DETECTION;
 
+  /** 
+   * @brief FailureManager constructor.
+   * 
+   * @param[in] messenger node's messenger
+   * @param[in] receiverManager receiver manager
+   * @param[in] logFileManager log file manager
+   * 
+   * @return FailureManager instance.
+   */
   FailureManager(Messenger& messenger,
                  std::shared_ptr<ReceiverManager> receiverManager,
-                 LogFileManager& m_logFileManager);
+                 LogFileManager& logFileManager);
 
+  /** 
+   * @brief Handles failure related messages
+   * 
+   * Failure detections is done through all-to-all heartbeating.
+   * 
+   * @param srcNodeId 
+   * @param receivedMessage 
+   * @param connection 
+   */
   void
   handleMessage(const int& srcNodeId,
                 const Message& receivedMessage,
                 const Messenger::Connection& connection) final;
 
+  /** 
+   * @brief Stops the receiver.
+   * 
+   */
   void
   stopReceiver() final;
 
+  /** 
+   * @brief Puts the current thread to sleep until notified otherwise.
+   * 
+   * This functions is used for the sake of pausing client connections while
+   * a node's recovery is in process. This is done for the sake of preventing 
+   * further modification of the cluster's log state while this one is being 
+   * transfered to the recovering node.
+   * 
+   */
   void
-  sleep();
+  clientThreadSleep();
 
   struct Context {
     std::mutex mutex; // TODO rename to nodeStateMutex

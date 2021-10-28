@@ -26,24 +26,24 @@ public:
    */
   Node() = default;
 
+  /** 
+   * @brief Prepares the node for inner and outer communication.
+   * 
+   * @param argc 
+   * @param argv 
+   */
   void
   init(int argc, char** argv);
 
+  /** 
+   * @brief Destroys the current instance.
+   * 
+   */
   void
   destroy() const;
-
-  void
-  enableClientCommunication();
-
-  void
-  disableClientCommunication();
 
 private:
   std::shared_ptr<ReceiverManager> m_receiverManager;
 
-  Messenger m_messenger;               /**< local messenger instance */
-
-  // TODO remove
-  int m_nodeId;       /**< id of the current node */
-  int m_clusterSize;  /**< number of nodes in the cluster */
+  Messenger m_messenger;
 };

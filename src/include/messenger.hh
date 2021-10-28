@@ -43,7 +43,7 @@ public:
    * @param[out] clusterSize number of processes in the cluster.
    */
   void
-  start(int argc, char** argv, int& rank, int& clusterSize);
+  start(int argc, char** argv);
 
   /**
    * @brief Stops the MPI API by calling MPI_Finalize().
@@ -60,6 +60,12 @@ public:
   int
   getRank() const;
 
+  /** 
+   * @brief Gets the cluster size
+   * 
+   * 
+   * @return cluster size
+   */
   int
   getClusterSize() const;
 
@@ -98,14 +104,19 @@ public:
        const Message& message,
        const Connection& connection = {MPI_COMM_WORLD}) const;
 
+  /** 
+   * @brief Send the given message to all nodes in the given range.
+   * 
+   * @param[in] message message to send
+   * @param start start node id
+   * @param end end node id (included)
+   * @param includeSelf whether to also send the message to self
+   */
   void
   broadcast(const Message& message,
             const int& start,
             const int& end = -1,
             const bool& includeSelf = false) const;
-
-  void
-  selfSend(const Message& message) const;
 
   /**
    * @brief Blocks until a message of specified tag is received.
@@ -138,33 +149,80 @@ public:
                  Message& message,
                  const Connection& connection = {MPI_COMM_WORLD}) const;
 
-  void
-  probeTagBlock(const Connection& connection, MessageTag& messageTag) const;
-
+  /** 
+   * @brief Opens the given port for communication.
+   * 
+   * @param[in] port port to open
+   */
   void
   openPort(std::string& port) const;
 
+  /** 
+   * @brief Closes the given port
+   * 
+   * @param[in] port port to close
+   */
   void
   closePort(const std::string& port) const;
 
+  /** 
+   * @brief Publishes the given port for lookup.
+   * 
+   * @param[in] port port to publish
+   */
   void
   publishPort(const std::string& port) const;
 
-  void
-  unpublishPort(const std::string& port) const;
-
+  /** 
+   * @brief Blocks until a connection is accepted.
+   * 
+   * @param[in] port port in which to accept connections
+   * @param[out] connection accepted connection
+   */
   void
   acceptConnBlock(const std::string& port, Connection& connection) const;
 
+  /** 
+   * @brief Looks up the published port by the server.
+   * 
+   * This function is meant to be used by clients.
+   * 
+   * @param[out] port retrieved port
+   */
   void
   lookupServerPort(std::string& port) const;
 
+  /**
+   * @brief Connects to the given port.
+   *
+   * This function is meant to be used by clients. This function will block
+   * until a matching accept call is found on the given port.
+   *
+   * @param[in] port port in which to connect
+   * @param[out] connection connection
+   */
   void
   connect(const std::string& port, Connection& connection) const;
 
+  /** 
+   * @brief Disconnects from the given connection.
+   * 
+   * This function will block until a matching 'disconnect' call is found in the
+   * given connection.
+   * 
+   * @param[in] connection connection to disconnect
+   */
   void
   disconnect(Connection& connection) const;
 
+  /** 
+   * @brief Sets whether communication for the given node should be dropped.
+   * 
+   * This functions is currently only used in the FailureManager.
+   * 
+   * @param[in] nodeId node id
+   * @param[in] isAlive whether the node is alive
+   */
   void
   setNodeStatus(const int& nodeId, const bool& isAlive);
 
@@ -172,7 +230,7 @@ private:
   void
   generateUniqueId(const int& nodeId, int& id) const;
 
-  int m_rank; /**< rank of the current process */
+  int m_rank;
   int m_clusterSize;
   bool m_isPublished = false;
 

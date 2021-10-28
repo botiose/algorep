@@ -1,3 +1,10 @@
+/**
+ * @file   message-info.hh
+ * @author Otiose email
+ * @date   Thu Oct 28 09:17:24 2021
+ *
+ * @brief  Defines message tag and message codes enums and utilities.
+ */
 #pragma once
 
 #include <string>

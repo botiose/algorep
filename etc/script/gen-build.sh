@@ -36,3 +36,7 @@ else
 fi
 
 cd ../..
+
+config="$(cat etc/default.json | sed "s/ARCHITECTURE/$arch/")"
+
+echo "$config" | sed "s|PROJECT_PATH|$(pwd)|" > etc/config.json

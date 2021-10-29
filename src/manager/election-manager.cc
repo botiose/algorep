@@ -7,7 +7,7 @@
 #include "message-info.hh"
 #include "receiver-manager.hh"
 
-#define ELECTION_WAIT_DURATION 5
+#define ELECTION_WAIT_DURATION 2
 #define LOOP_SLEEP_DURATION 10
 
 ElectionManager::ElectionManager(
@@ -101,7 +101,7 @@ waitForVictory(Messenger& messenger,
     clientManager->enableClientConn();
   }
 
-  std::cout << "leader elected" << std::endl; 
+  std::cout << "leader elected: " << leaderNodeId << std::endl; 
 }
 
 void

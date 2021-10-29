@@ -64,7 +64,7 @@ private:
   std::string m_port;
   std::string m_nextNodePort;
 
-  void receivePendingMessages(bool& isUp);
+  void receivePendingMessages();
 
   Messenger::Connection m_clientConnection;
 };

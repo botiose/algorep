@@ -21,7 +21,7 @@ for archs in $(jq -rc ".nodes | to_entries[]" <<< "$config"); do
             ssh "$address" "fusermount -u $projectPath"
             echo "Unmounted: $address"
         elif [ -z "$1" ]; then
-            ssh "$address" "sshfs $(whoami)@$(hostname):$(pwd) $projectPath"
+            ssh "$address" "sshfs -o Ciphers=arcfour $(whoami)@$(hostname):$(pwd) $projectPath"
             echo "Mounted: $address"
         else
             echo "ssh-mount.sh: Usage: ssh-mount.sh [-u]"

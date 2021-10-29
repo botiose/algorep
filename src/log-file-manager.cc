@@ -20,7 +20,7 @@ writeWithMode(const std::string& filePath,
               const bool& newline) {
   std::ofstream ofs(filePath, mode);
 
-  std::cout << str << std::endl;
+  std::cout << filePath << " write: " << str << std::endl;
 
   ofs << str;
 
@@ -50,7 +50,7 @@ LogFileManager::read(std::string& contents) {
 
   if (ifs.good()) {
     ifs.seekg(0, std::ios::end);
-    std::cout << ifs.tellg() << std::endl;
+
     contents.reserve(ifs.tellg());
     ifs.seekg(0, std::ios::beg);
 

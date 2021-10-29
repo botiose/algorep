@@ -49,13 +49,24 @@ ClientManager::handleMessage(const int& srcNodeId,
 
 void
 acceptConnection(Messenger& messenger,
+                 std::shared_ptr<FailureManager>& failureManager,
                  const std::string& port,
                  Messenger::Connection& clientConnection) {
+  
+  
+  failureManager->allowRecovery();
+
   messenger.acceptConnBlock(port, clientConnection);
+
+  failureManager->disallowRecovery();
 }
 
 void
-ClientManager::receivePendingMessages(bool& isUp) {
+ClientManager::receivePendingMessages() {
+  std::shared_ptr<ReplManager> replManager =
+      m_receiverManager->getReceiver<ReplManager>();
+
+  bool isUp = true;
   while (isUp == true) {
     int srcNodeId;
     Message receivedMessage;
@@ -67,11 +78,18 @@ ClientManager::receivePendingMessages(bool& isUp) {
     isUp = receivedMessage.getCodeInt() != 0;
     if (isUp == true) {
       if (receivedMessage.getCode<ClientCode>() != ClientCode::DISCONNECT) {
+        
+        replManager->sleep();
+
         this->handleMessage(srcNodeId, receivedMessage, m_clientConnection);
       } else {
         m_messenger.disconnect(m_clientConnection);
 
-        acceptConnection(m_messenger, m_port, m_clientConnection);
+        std::shared_ptr<FailureManager> failureManager =
+          m_receiverManager->getReceiver<FailureManager>();
+
+        acceptConnection(
+            m_messenger, failureManager, m_port, m_clientConnection);
       }
     }
   }
@@ -141,22 +159,12 @@ ClientManager::startReceiver() {
 
   exchangePorts(m_messenger, m_port, m_nextNodePort);
 
-  std::shared_ptr<ReplManager> replManager =
-      m_receiverManager->getReceiver<ReplManager>();
   std::shared_ptr<FailureManager> failureManager =
       m_receiverManager->getReceiver<FailureManager>();
 
-  acceptConnection(m_messenger, m_port, m_clientConnection);
+  acceptConnection(m_messenger, failureManager, m_port, m_clientConnection);
 
-  bool isUp = true;
-  while (isUp == true) {
-    replManager->sleep();
-    failureManager->clientThreadSleep();
-
-    this->receivePendingMessages(isUp);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
-  }
+  this->receivePendingMessages();
 
   m_messenger.disconnect(m_clientConnection);
 

@@ -1,0 +1,12 @@
+{
+  "nodes": {
+    "ARCHITECTURE": [
+      {
+        "address": "localhost",
+        "serverProcessCount": 5,
+        "clientProcessCount": 3,
+        "projectPath": "PROJECT_PATH"
+      }
+    ]
+  }
+}

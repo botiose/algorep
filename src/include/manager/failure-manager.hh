@@ -72,7 +72,10 @@ public:
    * 
    */
   void
-  clientThreadSleep();
+  allowRecovery();
+
+  void
+  disallowRecovery();
 
   struct Context {
     std::mutex mutex; // TODO rename to nodeStateMutex
@@ -81,10 +84,7 @@ public:
     int curRecoveryId = -1;
     std::mutex curRecoveryIdMutex;
     std::mutex clientConnMutex;
-    bool blockClientConn = false;
-    std::condition_variable blockClientConnCond;
-    bool clientConnBlocked = false;
-    std::condition_variable clientConnBlockedCond;
+    bool allowRecovery = true;
   };
 
 private:
@@ -97,5 +97,4 @@ private:
 
   bool m_pingThreadIsUp = true;
   std::thread m_pingThread;
-  std::thread m_recoveryThread;
 };

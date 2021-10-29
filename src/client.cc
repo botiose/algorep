@@ -6,7 +6,7 @@
 #include "client.hh"
 #include "repl-manager.hh"
 
-#define RESPONSE_WAIT_DURATION 60
+#define RESPONSE_WAIT_DURATION 20
 #define LOOP_SLEEP_DURATION 50
 #define TURN_SLEEP_DURATION 1
 
@@ -45,7 +45,7 @@ connectMessenger(Messenger& messenger,
                  Messenger::Connection& serverConnection) {
   std::string port;
   messenger.lookupServerPort(port);
-
+  std::cout << "lookup: " << port << std::endl; 
   messenger.connect(port, serverConnection);
 }
 

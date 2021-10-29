@@ -1,3 +1,4 @@
+#include <fstream>
 #include <cassert>
 #include <thread>
 #include <json.hpp>
@@ -9,6 +10,7 @@
 #define MAX_MESSAGE_SIZE 1000
 #define SERVER_NAME "server"
 #define SEND_WAIT_DURATION 100
+#define PUBLISH_PORT_FILEPATH "etc/published-port.txt"
 
 void
 serializeMessage(const Message& message, std::string& messageString) {
@@ -226,7 +228,7 @@ Messenger::openPort(std::string& port) const {
   char cPort[PORT_STRING_SIZE];
   MPI_Open_port(MPI_INFO_NULL, cPort);
 
-  port = std::string(cPort);
+  port = std::string(cPort);  
 }
 
 void
@@ -235,16 +237,12 @@ Messenger::closePort(const std::string& port) const {
 }
 
 void
-Messenger::publishPort(const std::string& port) const {
-  // TODO check if already published
+Messenger::publishPort(const std::string& port) {
+  std::ofstream ofs(PUBLISH_PORT_FILEPATH);
 
-  MPI_Info scopeInfo;
-  MPI_Info_create(&scopeInfo);
-  MPI_Info_set(scopeInfo, "ompi_global_scope", "true");
+  ofs << port;
 
-  MPI_Publish_name(SERVER_NAME, scopeInfo, port.c_str());
-
-  std::cout << "messenger pusblished: " << m_rank << std::endl;
+  ofs.close();
 }
 
 void
@@ -264,13 +262,11 @@ Messenger::generateUniqueId(const int& nodeId, int& id) const {
 
 void
 Messenger::lookupServerPort(std::string& port) const {
-  MPI_Info scopeInfo;
-  MPI_Info_create(&scopeInfo);
-  MPI_Info_set(scopeInfo, "ompi_lookup_order", "global");
+  std::ifstream ifs(PUBLISH_PORT_FILEPATH);
 
-  char cPort[PORT_STRING_SIZE];
-  MPI_Lookup_name(SERVER_NAME, scopeInfo, &cPort[0]);
-  port = std::string(cPort);
+  std::getline(ifs, port);
+
+  ifs.close();
 }
 
 void

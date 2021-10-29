@@ -171,11 +171,14 @@ public:
    * @param[in] port port to publish
    */
   void
-  publishPort(const std::string& port) const;
+  publishPort(const std::string& port);
 
-  /** 
+  // void
+  // unpublishPort();
+
+  /**
    * @brief Blocks until a connection is accepted.
-   * 
+   *
    * @param[in] port port in which to accept connections
    * @param[out] connection accepted connection
    */
@@ -232,7 +235,6 @@ private:
 
   int m_rank;
   int m_clusterSize;
-  bool m_isPublished = false;
 
   std::mutex m_mutex;
   std::vector<bool> m_processIsAlive;

@@ -5,7 +5,7 @@
 #include "election-manager.hh"
 #include "receiver-manager.hh"
 
-#define TIMEOUT_DURATION 3
+#define TIMEOUT_DURATION 1
 #define LOOP_SLEEP_DURATION 500
 #define RECOVERY_DURATION 3
 
@@ -31,10 +31,11 @@ indexToId(const int& nodeId, const int& index) {
 }
 
 void
-handleNodeFailure(const int& nodeIndex,
+handleNodeFailure(int nodeIndex,
                   Messenger& messenger,
                   std::vector<bool>& isAlive,
                   std::shared_ptr<ReceiverManager>& receiverManager) {
+  isAlive[nodeIndex] = false;
   messenger.setNodeStatus(nodeIndex, false);
 
   int nodeId = messenger.getRank();
@@ -44,10 +45,21 @@ handleNodeFailure(const int& nodeIndex,
   int failedNodeId = indexToId(nodeId, nodeIndex);
 
   if (electionManager->getLeaderNodeId() == failedNodeId) {
+    std::cout << messenger.getRank() << std::endl; 
+    std::this_thread::sleep_for(std::chrono::seconds(TIMEOUT_DURATION * 2));
     electionManager->startElection();
   }
+}
 
-  isAlive[nodeIndex] = false;
+
+void
+FailureManager::allowRecovery() {
+  m_context.clientConnMutex.unlock();
+}
+
+void
+FailureManager::disallowRecovery() {
+  m_context.clientConnMutex.lock();
 }
 
 void
@@ -56,14 +68,6 @@ handleNodeRecovery(int nodeIndex,
                    LogFileManager& logFileManager,
                    std::shared_ptr<ReceiverManager>& receiverManager,
                    FailureManager::Context& failureContext) {
-  // pause the client manager
-  {
-    std::unique_lock<std::mutex> lock(failureContext.clientConnMutex);
-    failureContext.blockClientConn = true;
-    failureContext.clientConnBlockedCond.wait(
-        lock, [&] { return failureContext.clientConnBlocked == false; });
-  }
-
   std::string logContents;
   logFileManager.read(logContents);
   nlohmann::json json = {{"state", logContents}};
@@ -78,22 +82,20 @@ handleNodeRecovery(int nodeIndex,
     failureContext.curRecoveryId = message.getId();
   }
 
-  int dstNodeId = indexToId(messenger.getRank(), nodeIndex);
-  messenger.send(dstNodeId, message);
-
-  std::this_thread::sleep_for(std::chrono::seconds(RECOVERY_DURATION));
-
-  {
-    std::unique_lock<std::mutex> lock(failureContext.curRecoveryIdMutex);
-
-    failureContext.curRecoveryId = -1;
-  }
-
-  // unpause the client manager
+  // pause the client manager
   {
     std::unique_lock<std::mutex> lock(failureContext.clientConnMutex);
-    failureContext.blockClientConn = false;
-    failureContext.blockClientConnCond.notify_all();
+
+    int dstNodeId = indexToId(messenger.getRank(), nodeIndex);
+    messenger.send(dstNodeId, message);
+
+    std::this_thread::sleep_for(std::chrono::seconds(RECOVERY_DURATION));
+
+    {
+      std::unique_lock<std::mutex> lock(failureContext.curRecoveryIdMutex);
+
+      failureContext.curRecoveryId = -1;
+    }
   }
 }
 
@@ -101,8 +103,7 @@ void
 checkTimeStamps(Messenger& messenger,
                 LogFileManager& logFileManager,
                 std::shared_ptr<ReceiverManager>& receiverManager,
-                FailureManager::Context& failureContext,
-                std::thread& recoveryThread) {
+                FailureManager::Context& failureContext) {
   for (int i = 0; i < messenger.getClusterSize() - 1; i++) {
     {
       std::unique_lock<std::mutex> lock(failureContext.mutex);
@@ -114,9 +115,17 @@ checkTimeStamps(Messenger& messenger,
               .count();
 
       if (failureContext.isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
-        std::cout << "failure detected: " << messenger.getRank() << " nodeIndex: " << i << std::endl; 
-        handleNodeFailure(
-            i, messenger, failureContext.isAlive, receiverManager);
+        int nodeId = i < messenger.getRank() ? i : i + 1;
+        std::cout << "failure detected: " << messenger.getRank()
+                  << " nodeIndex: " << nodeId << std::endl;
+
+        std::thread failureThread =
+            std::thread(handleNodeFailure,
+                        i,
+                        std::ref(messenger),
+                        std::ref(failureContext.isAlive),
+                        std::ref(receiverManager));
+        failureThread.detach();
       } else if (failureContext.isAlive[i] == false &&
                  elapsed < TIMEOUT_DURATION) {
         std::shared_ptr<ElectionManager> electionManager =
@@ -125,13 +134,16 @@ checkTimeStamps(Messenger& messenger,
         int leaderNodeId = electionManager->getLeaderNodeId();
         int nodeId = messenger.getRank();
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
-          std::cout << "recovery detected: " << messenger.getRank() << " nodeIndex: " << i << std::endl; 
-          recoveryThread = std::thread(handleNodeRecovery,
-                                       i,
-                                       std::ref(messenger),
-                                       std::ref(logFileManager),
-                                       std::ref(receiverManager),
-                                       std::ref(failureContext));
+          int nodeId = i < messenger.getRank() ? i : i + 1;
+          std::cout << "recovery detected: " << messenger.getRank()
+                    << " nodeIndex: " << nodeId << std::endl;
+          std::thread recoveryThread = std::thread(handleNodeRecovery,
+                                                   i,
+                                                   std::ref(messenger),
+                                                   std::ref(logFileManager),
+                                                   std::ref(receiverManager),
+                                                   std::ref(failureContext));
+          recoveryThread.detach();
         }
       }
     }
@@ -143,7 +155,6 @@ pingCheck(Messenger& messenger,
           LogFileManager& logFileManager,
           std::shared_ptr<ReceiverManager>& receiverManager,
           FailureManager::Context& failureContext,
-          std::thread& recoveryThread,
           bool& pingThreadIsUp) {
   std::shared_ptr<ReplManager> replManager =
       receiverManager->getReceiver<ReplManager>();
@@ -157,14 +168,13 @@ pingCheck(Messenger& messenger,
     checkTimeStamps(messenger,
                     logFileManager,
                     receiverManager,
-                    failureContext,
-                    recoveryThread);
+                    failureContext);
     broadcastPing(messenger);
 
     {
       std::unique_lock<std::mutex> lock(failureContext.mutex);
       isUp = pingThreadIsUp;
-    }    
+    }
   }
 }
 
@@ -185,7 +195,6 @@ FailureManager::init() {
                              std::ref(m_logFileManager),
                              std::ref(m_receiverManager),
                              std::ref(m_context),
-                             std::ref(m_recoveryThread),
                              std::ref(m_pingThreadIsUp));
 }
 
@@ -250,6 +259,11 @@ handleStateUpdate(const int& srcNodeId,
 
     enableComm(srcNodeId, messenger, mutex, isAlive);
   }
+
+  Message victory;
+  messenger.setMessage(LeaderElectionCode::VICTORY, victory);
+
+  messenger.send(srcNodeId, victory);
 }
 
 void
@@ -280,7 +294,7 @@ handleState(const int& srcNodeId,
             LogFileManager& logFileManager) {
   const std::string& messageData = receivedMessage.getData();
   nlohmann::json messageDataJson = nlohmann::json::parse(messageData);
-  const std::string& logContents = messageDataJson.at("state");  
+  const std::string& logContents = messageDataJson.at("state");
 
   logFileManager.replace(logContents);
 
@@ -354,19 +368,8 @@ FailureManager::stopReceiver() {
   {
     std::unique_lock<std::mutex> lock(m_context.mutex);
     m_pingThreadIsUp = false;
-  }  
+  }
 
   m_pingThread.join();
 }
 
-void
-FailureManager::clientThreadSleep() {
-  std::unique_lock<std::mutex> lock(m_context.clientConnMutex);
-
-  if (m_context.blockClientConn == true) {
-    m_context.blockClientConnCond.wait(
-        lock, [&] { return m_context.blockClientConn == false; });
-
-    m_recoveryThread.join();
-  }
-}

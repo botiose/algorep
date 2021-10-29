@@ -8,7 +8,7 @@
 
 #include "consensus-manager.hh"
 
-#define PROMISE_WAIT_DURATION 3
+#define PROMISE_WAIT_DURATION 5
 #define ACCEPT_WAIT_DURATION 5
 
 ConsensusManager::ConsensusManager(
@@ -50,6 +50,7 @@ receivePromises(const Messenger& messenger,
 
   {
     std::unique_lock<std::mutex> lock(mutex);
+
     majorityPromised = context.promiseCount >= ((clusterSize - 1) / 2);
   }
 
@@ -62,14 +63,14 @@ broadcastPrepare(const Messenger& messenger,
   Message prepare;
   messenger.setMessage(ConsensusCode::PREPARE, prepare);
 
-  int clusterSize = messenger.getClusterSize();
-  messenger.broadcast(prepare, 0, clusterSize, false);
-
   {
     std::unique_lock<std::mutex> lock(mutex);
 
     context.roundId = prepare.getId();
   }
+
+  int clusterSize = messenger.getClusterSize();
+  messenger.broadcast(prepare, 0, clusterSize, false);
 }
 
 void
@@ -123,28 +124,32 @@ void
 ConsensusManager::startConsensus(const std::string& value,
                                  bool& consensusReached) {
   consensusReached = false;
-  bool majorityAccepted = false;
-  while (majorityAccepted == false) {
-    broadcastPrepare(m_messenger, m_mutex, m_context);
 
-    bool majorityPromised;
-    receivePromises(m_messenger, m_mutex, m_context, majorityPromised);
-    if (majorityPromised == true) {
-      broadcastPropose(m_messenger, value, m_mutex, m_context);
+  broadcastPrepare(m_messenger, m_mutex, m_context);
 
-      receiveAccepts(m_messenger, m_mutex, m_context, majorityAccepted);
+  bool majorityPromised;
+  receivePromises(m_messenger, m_mutex, m_context, majorityPromised);
 
-      if (majorityAccepted == true) {
-        m_logFileManager.append(value);
+  if (majorityPromised == true) {
+    broadcastPropose(m_messenger, value, m_mutex, m_context);
 
-        broadcastAccepted(m_messenger, value, m_mutex, m_context);
+    bool majorityAccepted = false;
+    receiveAccepts(m_messenger, m_mutex, m_context, majorityAccepted);
 
-        consensusReached = true;
-      }
+    if (majorityAccepted == true) {
+      m_logFileManager.append(value);
+
+      broadcastAccepted(m_messenger, value, m_mutex, m_context);
+
+      consensusReached = true;
     }
   }
 
-  m_context = ConsensusManager::Context{};
+  {
+    std::unique_lock<std::mutex> lock(m_mutex);
+
+    m_context = ConsensusManager::Context{};
+  }
 }
 
 void
@@ -241,6 +246,7 @@ handlePromiseMessage(const Message& promise,
 
   {
     std::unique_lock<std::mutex> lock(mutex);
+
     if (id == context.roundId) {
       int acceptedId = messageJson.value("acceptedId", -1);
 

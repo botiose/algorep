@@ -14,8 +14,18 @@ file itself specifies the computer network in which the server and clients are
 meant to run on as well as their respective cpu architecture. The following is a
 example format for this file:
 
-{ "nodes": { "ARCHITECTURE": [ { "address": "localhost", "serverProcessCount":
-  5, "clientProcessCount": 3, "projectPath": "PROJECT_PATH" } ] } }
+{
+  "nodes": {
+    "ARCHITECTURE": [
+      {
+        "address": "localhost",
+        "serverProcessCount": 5,
+        "clientProcessCount": 3,
+        "projectPath": "PROJECT_PATH"
+      }
+    ]
+  }
+}
 
 The number of server nodes and client processes to run is specified by modifying
 the respective "serverProcessCount" and "clientProcessCount" fields to indicate
@@ -71,19 +81,21 @@ Both server and client repls support the following commands:
 
 The following is an example of valid repl inputs for the server:
 
-> start 1,crash 2,crash 1,recover 3,speed-low 4,speed-medium 2,recover shutdown
+> start
+> 1,crash
+> 2,crash
+> 1,recover
+> 3,speed-low
+> 4,speed-medium
+> 2,recover
+> shutdown
 
 ################################ DOCUMENTATION #################################
 
-Doxygen was used for the documentation. To create and open the documentation in
-a firefox browser use:
+Doxygen was used for the documentation. To create and open the documentation
+in a firefox browser use:
 
-$ make doc-view
-
-To view class diagrams 'graphviz' is required. On a debian based OS this can be
-installed with:
-
-$ sudo apt install graphviz
+$ make doc
 
 ################################## TEST SUIT ###################################
 

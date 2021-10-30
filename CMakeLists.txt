@@ -141,4 +141,23 @@ add_custom_target(repl-client
   DEPENDS etc-link
   )
 
+# DOCUMENTATION SYMBOLIC LINK
+add_custom_target(doc-link
+  [ ! -d doc ] && ln -s ${PROJECT_SOURCE_DIR}/doc ${PROJECT_BINARY_DIR}/doc ||
+  exit 0
+  )
+
+# DOCUMENTATION GENERATE
+add_custom_target(doc-gen
+  COMMAND doxygen doc/Doxyfile 1> /dev/null
+  DEPENDS doc-link
+  )
+
+# DOCUMENTATION OPEN
+add_custom_target(doc-view
+  # firefox --new-window html/index.html
+  firefox html/index.html
+  DEPENDS doc-gen
+  )
+
 add_subdirectory(test EXCLUDE_FROM_ALL)

@@ -63,17 +63,19 @@ public:
   stopReceiver() final;
 
   /** 
-   * @brief Puts the current thread to sleep until notified otherwise.
+   * @brief allows the node recovery.
    * 
-   * This functions is used for the sake of pausing client connections while
-   * a node's recovery is in process. This is done for the sake of preventing 
-   * further modification of the cluster's log state while this one is being 
-   * transfered to the recovering node.
+   * This function is used in the client manager to notify that any pending
+   * node recovery can start from this point on.
    * 
    */
   void
   allowRecovery();
 
+  /** 
+   * @brief disallows node recovery.
+   * 
+   */
   void
   disallowRecovery();
 

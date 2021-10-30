@@ -92,10 +92,15 @@ The following is an example of valid repl inputs for the server:
 
 ################################ DOCUMENTATION #################################
 
-Doxygen was used for the documentation. To create and open the documentation
-in a firefox browser use:
+Doxygen was used for the documentation. To create and open the documentation in
+a firefox browser use:
 
-$ make doc
+$ make doc-view
+
+To view class diagrams 'graphviz' is required. On a debian based OS this can be
+installed with:
+
+$ sudo apt install graphviz
 
 ################################## TEST SUIT ###################################
 

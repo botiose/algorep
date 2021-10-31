@@ -46,10 +46,9 @@ enum class FailureCode {
 enum class ClientCode {
   SHUTDOWN = 0,
   PORT = 1,
-  CONNECT = 2,
-  DISCONNECT = 3,
-  REPLICATE = 4,
-  SUCCESS = 5
+  DISCONNECT = 2,
+  REPLICATE = 3,
+  SUCCESS = 4
 };
 
 enum class ReplCode {

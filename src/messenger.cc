@@ -76,11 +76,9 @@ Messenger::send(const int& dstNodeId,
     int tag = message.getTagInt();
 
     if (tag != 3) {
-      std::cout << "[i]"
-                << "[" << tag << "]"
+      std::cout << "[" << tag << "]"
                 << "[" << m_rank << "]"
-                << "[" << dstNodeId << "]"
-                << "[o]: " << messageString << std::endl
+                << "[" << dstNodeId << "]: " << messageString << std::endl
                 << std::flush;
     }
 

@@ -43,6 +43,12 @@
 ** DONE handle repl shutdown in the client
 ** DONE set client speed sleep
 ** DONE set client to refresh the looked up port when replication times out
+* DONE demo
+** DONE normal consensus
+** DONE consensus with acceptor crash
+** DONE consensus with acceptor crash recovery
+** DONE consensus with leader crash
+** DONE consensus with leader crash recovery
 * TODO cleanup
 ** DONE implement a broacast member function
 ** TODO remove allocating logic in the LogFileManager contructor
@@ -50,15 +56,11 @@
 ** TODO encapsulate json logic
 ** TODO improve visibility of the rank and cluster size
 ** TODO fix message unique id generation
+* TODO misc
+** TODO remove jq dependency
+** TODO make some performance measures
 * TODO doc
-** TODO [#C] document header functions
-** TODO [#C] why repl messaging is done through a file
-** TODO [#C] why the repl-manager is passed to all other managers
-** TODO [#C] why the accept thread is not an accept-manager
-** TODO [#C] why system relies on published port overwriting for client comm
-* TODO demo
-** TODO normal consensus
-** TODO consensus with acceptor crash
-** TODO consensus with acceptor crash recovery
-** TODO consensus with leader crash
-** TODO consensus with leader crash recovery
+** DONE [#C] document header functions
+** DONE [#C] why repl messaging is done through a file
+** TODO performance measures
+

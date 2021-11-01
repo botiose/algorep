@@ -92,6 +92,8 @@ The following is an example of valid repl inputs for the server:
 
 ################################ DOCUMENTATION #################################
 
+The report can be found in doc/doc.pdf
+
 Doxygen was used for the documentation. To create and open the documentation in
 a firefox browser use:
 

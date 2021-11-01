@@ -150,4 +150,3 @@ add_custom_target(doc-view
   DEPENDS doc-gen
   )
 
-add_subdirectory(test EXCLUDE_FROM_ALL)

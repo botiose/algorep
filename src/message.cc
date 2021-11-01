@@ -49,3 +49,8 @@ int
 Message::getCodeInt() const {
   return m_code;
 }
+
+void
+Message::setData(const std::string& data) {
+  m_data = std::make_shared<std::string>(data);
+}

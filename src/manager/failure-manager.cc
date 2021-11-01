@@ -45,7 +45,6 @@ handleNodeFailure(int nodeIndex,
   int failedNodeId = indexToId(nodeId, nodeIndex);
 
   if (electionManager->getLeaderNodeId() == failedNodeId) {
-    std::cout << messenger.getRank() << std::endl; 
     std::this_thread::sleep_for(std::chrono::seconds(TIMEOUT_DURATION * 2));
     electionManager->startElection();
   }
@@ -68,13 +67,8 @@ handleNodeRecovery(int nodeIndex,
                    LogFileManager& logFileManager,
                    std::shared_ptr<ReceiverManager>& receiverManager,
                    FailureManager::Context& failureContext) {
-  std::string logContents;
-  logFileManager.read(logContents);
-  nlohmann::json json = {{"state", logContents}};
-  const std::string& jsonString = json.dump();
-
   Message message;
-  messenger.setMessage(FailureCode::STATE, jsonString, message);
+  messenger.setMessage(FailureCode::STATE, message);
 
   {
     std::unique_lock<std::mutex> lock(failureContext.curRecoveryIdMutex);
@@ -85,6 +79,13 @@ handleNodeRecovery(int nodeIndex,
   // pause the client manager
   {
     std::unique_lock<std::mutex> lock(failureContext.clientConnMutex);
+
+    std::string logContents;
+    logFileManager.read(logContents);
+    nlohmann::json json = {{"state", logContents}};
+    const std::string& jsonString = json.dump();
+
+    message.setData(jsonString);
 
     int dstNodeId = indexToId(messenger.getRank(), nodeIndex);
     messenger.send(dstNodeId, message);
@@ -140,7 +141,7 @@ checkTimeStamps(Messenger& messenger,
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
           int nodeId = i < messenger.getRank() ? i : i + 1;
           std::cout << "recovery detected by: " << messenger.getRank()
-                    << " nodeIndex on: " << nodeId << std::endl;
+                    << " on: " << nodeId << std::endl;
 
           // start a recovery round if the current node is the leader
           std::thread recoveryThread = std::thread(handleNodeRecovery,

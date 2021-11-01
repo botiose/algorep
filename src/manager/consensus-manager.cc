@@ -10,6 +10,7 @@
 
 #define PROMISE_WAIT_DURATION 5
 #define ACCEPT_WAIT_DURATION 5
+#define LOG_WRITE_DURATION 3
 
 ConsensusManager::ConsensusManager(
     Messenger& messenger,
@@ -144,6 +145,9 @@ ConsensusManager::startConsensus(const std::string& value,
       consensusReached = true;
     }
   }
+  
+  // wait for the consensus thread to write down the log
+  std::this_thread::sleep_for(std::chrono::seconds(LOG_WRITE_DURATION));
 
   // reset the consensus round context
   {

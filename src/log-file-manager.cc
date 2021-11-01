@@ -20,8 +20,6 @@ writeWithMode(const std::string& filePath,
               const bool& newline) {
   std::ofstream ofs(filePath, mode);
 
-  std::cout << filePath << " write: " << str << std::endl;
-
   ofs << str;
 
   if (newline == true) {
@@ -29,6 +27,8 @@ writeWithMode(const std::string& filePath,
   }
 
   ofs.close();
+
+  std::cout << filePath << " write: " << str << std::endl;
 }
 
 void

@@ -109,6 +109,13 @@ public:
   getData() const;
 
   /**
+   * @brief Sets the data field of the message.
+   *
+   */
+  void
+  setData(const std::string&);
+
+  /**
    * @brief returns whether the message was properly initialized.
    *
    * This is set to true of the non-defaulted constructor was used for

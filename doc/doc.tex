@@ -33,23 +33,28 @@
 % Title page and table of contents setup
 \begin{titlepage}
   \begin{center}
-    \vspace*{1cm} \Huge \textbf{ALGOREP Project}\\
-    \vspace*{2\baselineskip} \large \textbf{Abstract}
-    \vspace*{2\baselineskip}
+    %% \vspace*{1cm} 
+    \Huge \textbf{ALGOREP Project}\\
+    %% \vspace*{1\baselineskip} \large \textbf{Abstract}
+    
+    %% \vspace*{14\baselineskip}
   \end{center}
+  \vfill\normalsize
+  \tableofcontents
+
   \begin{center}
-    \vfill\normalsize \textbf{Gwenegan Bertho}\\ \normalsize \textbf{Kévin
+    \vfill\normalsize
+    \textbf{Gwenegan Bertho}\\ \normalsize \textbf{Kévin
       Guillet}\\ \normalsize \textbf{Mathieu Tammaro}\\ \normalsize \textbf{Jose
       A. Henriquez Roa}\\
     \vspace*{2\baselineskip} \today \rhead{\today}
-    \newpage
-    \normalsize \tableofcontents
+    %% \newpage
     \newpage
   \end{center}
 \end{titlepage}
 % Document Body:
 \section{Software architecture}
-This section shall go though all the design choses made throughout the
+This section shall go though all the design choices made throughout the
 development of the project. First, a description of Messenger class, which fully
 encapsulates the Open MPI API. Then, an overview of the MessageReceiver virtual
 class, followed by a description of the 5 classes inheriting from it, and the
@@ -65,7 +70,7 @@ classes.
 The messenger class, located in \texttt{src/include/messenger.hh}, is a complete
 encapsulation of the Open MPI API. All MPI related calls are through the member
 functions of this class. When it comes to making use of APIs, the design choice
-encapsulating them is fairly common and easily argumented. And as with any
+encapsulating them is fairly common and easily justified. And as with any
 design choice we have done this for the sake of decreasing the complexity of the
 overall architecture. Thus, we list some of the benefits of this
 encapsulation;\\\\First, it allowed to safely learn to use the API by
@@ -75,7 +80,7 @@ that the use of a given functionality from the API that was previously used
 during the early stages might no longer be desired during later stages. For
 instance during the development of this project a similar scenario was
 encountered were an ambiguity in the MPI standard led to an incorrect assumption
-on the behavior of a function; In the 4th version of the Message-Passing
+on the behavior of a function; In the 4'th version of the Message-Passing
 Interface Standard in section \texttt{11.9.3} detailing the client routines to
 use when implementing a client/server model with MPI the standard states
 that:\\\\ ``\textit{If the port exists, but does not have a pending}
@@ -87,21 +92,21 @@ MPI\_COMM\_CONNECT \textit{raises an error of class } MPI\_ERR\_PORT
 description of the function MPI\_Comm\_Connect states that:\\\\ ``\textit{The}
 MPI\_Comm\_connect \textit{call must only be called after the} MPI\_Comm\_accept
 \textit{call has been made by the MPI job acting as the server.}''.\\\\ As was
-found during the actual use of the MPI\_Comm\_Connect the the highligted 'or' in
+found during the actual use of the MPI\_Comm\_Connect the the highlighted 'or' in
 the quote from the standard turned out to be an exclusive 'or' where the choice
 to either implement the timeout functionality or allow the 'connect' call to
 complete upon 'accept' being called on the server was left to the
-implementation. This meant that there would be an intrisic need to somehow
+implementation. This meant that there would be an intrinsic need to somehow
 handle race conditions from the client, due to the fact that a failed 'connect'
-call would eventually timout the client, which would then force the client to
+call would eventually timeout the client, which would then force the client to
 exit with an MPI\_ERR\_PORT error. This was eventually resolved by making the
 clients synchronize themselves though the use of an external file, located in
 \texttt{etc/turn.txt}. In this scenario this incorrect assumption led to the
-unforseen implementation of a client synchonization mechanism. However, if for
-instance an incorect assumption had been made on the use of the MPI\_Recv,
+unforeseen implementation of a client synchronization mechanism. However, if for
+instance an incorrect assumption had been made on the use of the MPI\_Recv,
 causing the need for this call to be switched to the non-blocking variant
 MPI\_Irecv. Then having encapsulated the API would then limit the modification
-required to be made to a single class, instead of every line thoughout the
+required to be made to a single class, instead of every line throughout the
 project where the function was used.\\\\ Another, use for encapsulating
 the API is to limit the dependency to said API. For instance, if there ever came
 a need to switch Open MPI to another MPI implementation then there would only be
@@ -125,7 +130,7 @@ architecture of the whole project. This class encapsulates all logic related to
 receiving and handling all messages from a single specified tag. This tag is
 specified in the constructor and is stored in the protected \texttt{m\_tag}
 member variable. For the most part derived instances of this class, first
-specify the tag to handle, and simply start an infinit 'receive' loop when the
+specify the tag to handle, and simply start an infinite 'receive' loop when the
 \texttt{startReceiver()} function is called. In this loop the virtual
 \texttt{handleMessage()} member function is called after each new message. And
 so, derived classes only need to implement said \texttt{handleMessage()}
@@ -146,28 +151,28 @@ are as follows:\\
   };
 \end{minted}
 \ \\
-Each of these five tag managers/receivers are instanciated once at the start of
+Each of these five tag managers/receivers are instantiated once at the start of
 the program and are subscribed to the \texttt{ReceiverManager}. A description of
 this class and the five tag managers is given in the following sections.
 \subsubsection{ReceiverManager}
 As will be further detailed in the five subsequent sections each of the tag
 managers has some form of time sensitive logic to handle. In most of these
 sections there is need to wait for a given amount time. However, pausing the
-main thread for that given amount of time could possible entail an incorect
-behaviour on some other time senstive section. And so for each of these time
+main thread for that given amount of time could possible entail an incorrect
+behavior on some other time sensitive section. And so for each of these time
 sensitive sections we were faced with one of two choices. Either manually
 implementing said time sensitive logic through the use of busy waiting functions
-or making use of multithreading and pause current the thread to let the job
+or making use of multi-threading and pause current the thread to let the job
 scheduler switch out to an active thread. The choice was made to make use of
-multithreading due to the number of time sensitive sections that were to be
-implemeted which when coupled with the implementation of a specfic busy waiting
+multi-threading due to the number of time sensitive sections that were to be
+implemented which when coupled with the implementation of a specific busy waiting
 function for each of these sections would lead to a much greater amount of code
 to both write and maintain.\\\\ The \texttt{ReceiverManager} class is the one
 that manages these threads. One is created for each receiver and remains active
 until the program is issued to shutdown, handles to these threads are stored in
 the \texttt{m\_threads} member variable. In addition to this the
 \texttt{ReceiverManager} also server as a container of each of the five
-receivers. Access from whithing each of the receivers to other ones is done
+receivers. Access from withing each of the receivers to other ones is done
 through the use of the \texttt{getReceiver()} member function of this class.
 \subsubsection{ConsensusManager}
 The ConsensusManager is a derived class from the MessageReceiver handling all
@@ -179,7 +184,7 @@ coupling of this class to other ones.\\
 \begin{itemize}
 \item \texttt{startConsensus()}: This function starts an consensus round. For the
 consensus our implementation of the Multi-Paxos algorithm was used. This
-function implements the behaviour of a Proposer in the Paxos algorithm. In other
+function implements the behavior of a Proposer in the Paxos algorithm. In other
 words, depending on whether the respective conditions are met, it broadcasts
 \texttt{PREPARE}, \texttt{PROMISE} and \texttt{ACCEPTED} (from the
 \texttt{ConsensusCode} enum) to the acceptors.  While also waiting for the
@@ -201,7 +206,7 @@ initial leader. This class exposes the two \texttt{startElection()} and
 \item \texttt{startElection()}: As the name implies this
 function starts an election. For leader election the Bully algorithm was
 used. This function broadcast a \texttt{ELECTION} message to all other nodes and
-then waits for a victory message. If none is received for the alloted amount of
+then waits for a victory message. If none is received for the allotted amount of
 time (and no response was heard back from a node with a higher id), then a
 \texttt{VICTORY} message will be broadcasted.\\
 \item \texttt{handleMessage()}: Upon receival of the two election codes list above
@@ -241,7 +246,7 @@ and \texttt{disallowRecovery()}.\\
         ensure correct behavior even during a change of leader.\\
     \end{enumerate}
 \item \texttt{pingCheck()}: Failure detection is done through all-to-all
-  heartbeating. This function is run on a separate thread it executes an infinit
+  heart-beating. This function is run on a separate thread it executes an infinite
   loop that both broadcasts pings and check the 'last-seen' list at regular
   intervals. When either a failure or recovery is detected an additional
   (detached) thread is spawned to handle either event. This is done in order to
@@ -253,7 +258,7 @@ and \texttt{disallowRecovery()}.\\
   on). And that any pending recovery can start from this point on.\\
 \item \texttt{disallowRecovery()}: Also called by the clientManager it will
   notify the failureManager about the opposite. It will also block until the
-  current recovery is done or the alloted time runs out.
+  current recovery is done or the allotted time runs out.
 \end{itemize}
 \subsubsection{ClientManager}
 The ClientManager is the derived class from the MessageReceiver that handles all
@@ -290,7 +295,7 @@ reason the later option was chosen. Finally, the class itself exposes a single
   \texttt{START}, \texttt{SPEED\_<LOW/MEDIUM/HIGH>}, \texttt{CRASH} and
   \texttt{RECOVER}.\\
 \item \texttt{sleep()}: Depending on the issued repl commands this function will
-  either block the currect thread, until \texttt{RECOVERY} is received. Or put
+  either block the current thread, until \texttt{RECOVERY} is received. Or put
   the thread to sleep for a given amount of time depending on whether
   \texttt{SPEED\_<LOW/MEDIUM/HIGH>} were received. This function is called by
   all receivers except this one right before their respective
@@ -298,9 +303,9 @@ reason the later option was chosen. Finally, the class itself exposes a single
 \end{itemize}
 \section{Tests}
 Testing was exclusively done by hand through the use of debug messages rather
-than through a streamlined test suit. This is due to the multithreaded nature of
+than through a streamlined test suit. This is due to the multi-threaded nature of
 the application and to our belief that setting up such a system would require a
-too large of a portion of the emparted time. The following presents some of the
+too large of a portion of the imparted time. The following presents some of the
 debug messages that were used during development:\\\\
 \texttt{[0][0][1]: \{"code":1\}}\\
 \texttt{[0][0][2]: \{"code":1\}}\\
@@ -326,4 +331,24 @@ format. The mapping between the integer and what it means is as follows:
   };
 \end{minted}
 \section{Performance measures}
+The following are performance statistics averaged accross 10 tests. The CPU in
+which these tests were performed was the AMD FX(tm)-8350 Eight-Core Processor.
+The single variable for these tests was the number of nodes used on the server
+side.
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.5]{image/election-stat.pdf}
+  \includegraphics[scale=0.5]{image/accept-stat.pdf}
+  \caption{Election duration [left], Majority accept duration[right]}
+\end{figure}
+\subsection{Election}
+The previous duration were retrieved by measuring the amount of time taken for a
+leader to be elected after having all nodes broadcast an \texttt{ELECTION}
+message. We believe the increase in the duration observed in between the
+systems made from seven to eight nodes is related to the fact that the tests
+were performed in an eight core CPU.
+\subsection{Consensus}
+The previous duration were retrieved by measuring the amount of time taken for
+the majority of acceptors to send back \texttt{ACCEPT} after the initial
+broadcast of the \texttt{PREPARE} message from the leader.
 \end{document}

@@ -116,9 +116,11 @@ checkTimeStamps(Messenger& messenger,
 
       if (failureContext.isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
         int nodeId = i < messenger.getRank() ? i : i + 1;
-        std::cout << "failure detected: " << messenger.getRank()
-                  << " nodeIndex: " << nodeId << std::endl;
+        std::cout << "failure detected by: " << messenger.getRank()
+                  << " on: " << nodeId << std::endl;
 
+        // disable communication to the failed node and trigger and election if
+        // the failed node was the leader
         std::thread failureThread =
             std::thread(handleNodeFailure,
                         i,
@@ -130,13 +132,17 @@ checkTimeStamps(Messenger& messenger,
                  elapsed < TIMEOUT_DURATION) {
         std::shared_ptr<ElectionManager> electionManager =
             receiverManager->getReceiver<ElectionManager>();
+
         bool noCurrentRecovery = failureContext.curRecoveryId == -1;
         int leaderNodeId = electionManager->getLeaderNodeId();
         int nodeId = messenger.getRank();
+
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
           int nodeId = i < messenger.getRank() ? i : i + 1;
-          std::cout << "recovery detected: " << messenger.getRank()
-                    << " nodeIndex: " << nodeId << std::endl;
+          std::cout << "recovery detected by: " << messenger.getRank()
+                    << " nodeIndex on: " << nodeId << std::endl;
+
+          // start a recovery round if the current node is the leader
           std::thread recoveryThread = std::thread(handleNodeRecovery,
                                                    i,
                                                    std::ref(messenger),
@@ -165,10 +171,13 @@ pingCheck(Messenger& messenger,
 
     std::this_thread::sleep_for(std::chrono::milliseconds(LOOP_SLEEP_DURATION));
 
+    // check the timestamps of all nodes
     checkTimeStamps(messenger,
                     logFileManager,
                     receiverManager,
                     failureContext);
+
+    // broadcast ping message to all nodes
     broadcastPing(messenger);
 
     {
@@ -333,10 +342,13 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::STATE: {
+    // overwrite the log with the contents of this message
     handleState(srcNodeId, receivedMessage, m_messenger, m_logFileManager);
     break;
   }
   case FailureCode::STATE_UPDATED: {
+    // if the recovering node sent back this message (and some additional)
+    // conditions are met the broadcast the full recovery of this node
     handleStateUpdate(srcNodeId,
                       receivedMessage,
                       m_messenger,
@@ -348,6 +360,8 @@ FailureManager::handleMessage(const int& srcNodeId,
     break;
   }
   case FailureCode::RECOVERED: {
+    // re-enable communication to the node specified in the data field of this
+    // message
     handleRecovered(receivedMessage,
                     m_messenger,
                     m_context.mutex,

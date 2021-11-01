@@ -78,16 +78,6 @@ target_include_directories(shutdown-client PUBLIC
   ${COMMON_INCLUDES}
   )
 
-# CROSSCOMPILE CLIENT TARGET
-add_custom_target(crosscompile-client
-  COMMAND ./../../etc/script/cross-compile.sh client
-  )
-
-# CROSSCOMPILE SERVER TARGET
-add_custom_target(crosscompile-server
-  COMMAND ./../../etc/script/cross-compile.sh server
-  )
-
 add_custom_target(etc-link
   [ ! -d etc ] && ln -s ${PROJECT_SOURCE_DIR}/etc ${PROJECT_BINARY_DIR}/etc ||
   exit 0
@@ -108,10 +98,10 @@ add_custom_target(clear-repl-server
 # CLIENT RUN TARGET
 add_custom_target(run-client
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
-  COMMAND ./../../etc/script/launch-clients.sh
+  COMMAND ./etc/script/launch-clients-no-dep.sh
   COMMAND tail -f etc/client/00/repl.txt | sed '/shutdown/ q' > /dev/null
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS client crosscompile-client etc-link clear-repl-client
+  DEPENDS client etc-link clear-repl-client
   )
 
 # SERVER RUN TARGET
@@ -122,7 +112,7 @@ add_custom_target(run-server
   COMMAND printf %35sLOG-CKSUM%36s\\\\n | tr " " "="
   COMMAND cksum etc/server/log/* || exit 0
   COMMAND printf %80s\\\\n | tr " " "="
-  DEPENDS server crosscompile-server etc-link shutdown-client clear-repl-server
+  DEPENDS server etc-link shutdown-client clear-repl-server
   )
 
 # SERVER REPL TARGET

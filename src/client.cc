@@ -6,7 +6,7 @@
 #include "client.hh"
 #include "repl-manager.hh"
 
-#define RESPONSE_WAIT_DURATION 20
+#define RESPONSE_WAIT_DURATION 40
 #define LOOP_SLEEP_DURATION 50
 #define TURN_SLEEP_DURATION 1
 
@@ -45,7 +45,6 @@ connectMessenger(Messenger& messenger,
                  Messenger::Connection& serverConnection) {
   std::string port;
   messenger.lookupServerPort(port);
-  std::cout << "lookup: " << port << std::endl; 
   messenger.connect(port, serverConnection);
 }
 
@@ -80,6 +79,7 @@ replicate(Messenger& messenger,
     messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
 
     messenger.send(0, message, serverConnection);
+    std::cout << "sent: " << data << std::endl; 
 
     using namespace std::chrono;
     auto start = high_resolution_clock::now();

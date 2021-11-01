@@ -78,8 +78,8 @@ Messenger::send(const int& dstNodeId,
     if (tag != 3) {
       std::cout << "[" << tag << "]"
                 << "[" << m_rank << "]"
-                << "[" << dstNodeId << "]: " << messageString << std::endl
-                << std::flush;
+                << "[" << dstNodeId << "]: "
+                << "code: " << message.getCodeInt() << std::endl;
     }
 
     MPI_Send(messageString.c_str(),

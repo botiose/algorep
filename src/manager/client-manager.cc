@@ -32,6 +32,7 @@ ClientManager::handleMessage(const int& srcNodeId,
     std::shared_ptr<ConsensusManager> consensusManager =
         m_receiverManager->getReceiver<ConsensusManager>();
 
+    // block the thread until the consensus is reached or timeout occurs
     bool consensusReached;
     consensusManager->startConsensus(value, consensusReached);
 
@@ -52,8 +53,8 @@ acceptConnection(Messenger& messenger,
                  std::shared_ptr<FailureManager>& failureManager,
                  const std::string& port,
                  Messenger::Connection& clientConnection) {
-  
-  
+  // notify the failure manager that there is no curernt client connection and
+  // that recovery can take place
   failureManager->allowRecovery();
 
   messenger.acceptConnBlock(port, clientConnection);
@@ -121,6 +122,8 @@ receivePort(const Messenger& messenger, std::string& nextNodePort) {
   messageJson.at("port").get_to(nextNodePort);
 }
 
+// the two functions above and this one are for the sake of proper shutdown of
+// the system
 void
 exchangePorts(const Messenger& messenger,
               const std::string& port,
@@ -134,6 +137,7 @@ exchangePorts(const Messenger& messenger,
   }
 }
 
+// this function is used to properly shutdown the system
 void
 shutdownNeighbor(const Messenger& messenger,
                  std::shared_ptr<ElectionManager> electionManager,

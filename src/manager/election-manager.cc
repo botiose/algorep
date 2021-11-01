@@ -10,6 +10,9 @@
 #define ELECTION_WAIT_DURATION 2
 #define LOOP_SLEEP_DURATION 10
 
+// Note: The comments in the file were taken from the
+// https://en.wikipedia.org/wiki/Bully_algorithm wikipedia page.
+
 ElectionManager::ElectionManager(
     Messenger& messenger, std::shared_ptr<ReceiverManager> receiverManager)
     : MessageReceiver(messenger, managedTag, receiverManager) {
@@ -87,11 +90,17 @@ waitForVictory(Messenger& messenger,
 
       elapsed = duration_cast<std::chrono::seconds>(cur - start).count();
 
+      // if an answer from a higher id'd node is received it wait for a given
+      // amount of time otherwise wait until a leader is elected or the election
+      // times out.
       keepWaiting = (aliveReceived == true) ||
                     (leaderNodeId == -1) && (elapsed < ELECTION_WAIT_DURATION);
     }
   }
 
+  // If P receives no Answer after sending an Election message, then it
+  // broadcasts a Victory message to all other processes and becomes the
+  // Coordinator.
   if (gotLeader(mutex, leaderNodeId) == false) {
     declareVictory(messenger, mutex, leaderNodeId);
 
@@ -175,12 +184,19 @@ ElectionManager::handleMessage(const int& srcNodeId,
   LeaderElectionCode code = receivedMessage.getCode<LeaderElectionCode>();
   switch (code) {
   case LeaderElectionCode::ELECTION: {
+    // if P receives an Election message from another process with a lower ID it
+    // sends an Answer message back and starts the election process at the
+    // beginning, by sending an Election message to higher-numbered processes.
     respondAlive(m_messenger, srcNodeId);
     broadcastElection(
         m_messenger, m_mutex, m_leaderNodeId, m_start, m_aliveReceived);
     break;
   }
   case LeaderElectionCode::ALIVE: {
+    // If P receives an Answer from a process with a higher ID, it sends no
+    // further messages for this election and waits for a Victory message. (If
+    // there is no Victory message after a period of time, it restarts the
+    // process at the beginning.)
     if (srcNodeId > nodeId) {
       std::thread aliveWaitThread = std::thread(aliveWait,
                                                 std::ref(m_messenger),
@@ -193,6 +209,8 @@ ElectionManager::handleMessage(const int& srcNodeId,
     break;
   }
   case LeaderElectionCode::VICTORY: {
+    // If P receives a Coordinator message, it treats the sender as the
+    // coordinator.
     setLeaderNodeId(srcNodeId, m_mutex, m_leaderNodeId);
     break;
   }

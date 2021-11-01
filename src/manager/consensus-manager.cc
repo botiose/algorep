@@ -24,11 +24,10 @@ receiveAccepts(const Messenger& messenger,
                std::mutex& mutex,
                ConsensusManager::Context& context,
                bool& majorityAccepted) {
-  bool messageReceived = false;
+  // pause the current thread to let the consensus thread receive the accepts
+  std::this_thread::sleep_for(std::chrono::seconds(ACCEPT_WAIT_DURATION));
 
   int clusterSize = messenger.getClusterSize();
-
-  std::this_thread::sleep_for(std::chrono::seconds(ACCEPT_WAIT_DURATION));
 
   {
     std::unique_lock<std::mutex> lock(mutex);
@@ -43,6 +42,7 @@ receivePromises(const Messenger& messenger,
                 std::mutex& mutex,
                 ConsensusManager::Context& context,
                 bool& majorityPromised) {
+  // pause the current thread to let the consensus thread receive the promises
   std::this_thread::sleep_for(std::chrono::seconds(PROMISE_WAIT_DURATION));
 
   int clusterSize = messenger.getClusterSize();
@@ -145,6 +145,7 @@ ConsensusManager::startConsensus(const std::string& value,
     }
   }
 
+  // reset the consensus round context
   {
     std::unique_lock<std::mutex> lock(m_mutex);
 
@@ -173,12 +174,14 @@ handlePrepareMessage(const Messenger& messenger,
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
+      // send back the accepted value if a proposal was already accepted
       messenger.send(srcNodeId, promise);
     } else {
       nlohmann::json promiseDataJson = {{"roundId", id}};
       const std::string& promiseData = promiseDataJson.dump();
       messenger.setMessage(ConsensusCode::PROMISE, promiseData, promise);
 
+      // otherwise respond with a normal promise
       messenger.send(srcNodeId, promise);
     }
   }
@@ -211,6 +214,7 @@ handleProposeMessage(const Messenger& messenger,
 
     messenger.setMessage(ConsensusCode::ACCEPT, acceptData, accept);
 
+    // send accept if the previous condition is met
     messenger.send(srcNodeId, accept);
   }
 }
@@ -221,12 +225,12 @@ handleAcceptedMessage(const Messenger& messenger,
                       LogFileManager& logFileManager,
                       std::mutex& mutex,
                       ConsensusManager::Context& context) {
-  // TODO check round id
   const std::string& messageData = receivedMessage.getData();
   nlohmann::json messageJson = nlohmann::json::parse(messageData);
 
   std::string value = messageJson.at("value");
 
+  // write down the value to the log
   logFileManager.append(value);
 
   {
@@ -255,6 +259,7 @@ handlePromiseMessage(const Message& promise,
         context.maxAcceptedId = acceptedId;
       }
 
+      // increase the accept count. Checked on the thread that started consensus
       context.promiseCount += 1;
     }
   }
@@ -266,7 +271,7 @@ handleAcceptMessage(const Message& accept,
                     ConsensusManager::Context& context) {
   std::unique_lock<std::mutex> lock(mutex);
 
-  // TODO check round id
+  // increase the accept count. Checked on the thread that started consensus
   context.acceptCount += 1;
 }
 

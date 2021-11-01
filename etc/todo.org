@@ -57,11 +57,9 @@
 ** TODO improve visibility of the rank and cluster size
 ** TODO fix message unique id generation
 * TODO misc
-** TODO remove jq dependency
-** TODO make some performance measures
+** DONE remove jq dependency
+** DONE make some performance measures
 * TODO doc
 ** DONE [#C] document header functions
 ** DONE [#C] why repl messaging is done through a file
-** TODO performance measures
-** TODO abstract
 

@@ -103,9 +103,3 @@ To view class diagrams 'graphviz' is required. On a debian based OS this can be
 installed with:
 
 $ sudo apt install graphviz
-
-################################## TEST SUIT ###################################
-
-GoogleTest was used for the testsuit. This one can be launched with:
-
-$ make check

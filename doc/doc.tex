@@ -301,6 +301,27 @@ reason the later option was chosen. Finally, the class itself exposes a single
   all receivers except this one right before their respective
   \texttt{handleMessage()} function.
 \end{itemize}
+\section{Performance measures}
+The following are performance statistics averaged accross 10 tests. The CPU in
+which these tests were performed was the AMD FX(tm)-8350 Eight-Core Processor.
+The single variable for these tests was the number of nodes used on the server
+side.
+\begin{figure}[H]
+  \centering
+  \includegraphics[scale=0.5]{image/election-stat.pdf}
+  \includegraphics[scale=0.5]{image/accept-stat.pdf}
+  \caption{Election duration [left], Majority accept duration[right]}
+\end{figure}
+\subsection{Election}
+The previous duration were retrieved by measuring the amount of time taken for a
+leader to be elected after having all nodes broadcast an \texttt{ELECTION}
+message. We believe the increase in the duration observed in between the
+systems made from seven to eight nodes is related to the fact that the tests
+were performed in an eight core CPU.
+\subsection{Consensus}
+The previous duration were retrieved by measuring the amount of time taken for
+the majority of acceptors to send back \texttt{ACCEPT} after the initial
+broadcast of the \texttt{PREPARE} message from the leader.
 \section{Tests}
 Testing was exclusively done by hand through the use of debug messages rather
 than through a streamlined test suit. This is due to the multi-threaded nature of
@@ -330,25 +351,4 @@ format. The mapping between the integer and what it means is as follows:
     VICTORY = 3
   };
 \end{minted}
-\section{Performance measures}
-The following are performance statistics averaged accross 10 tests. The CPU in
-which these tests were performed was the AMD FX(tm)-8350 Eight-Core Processor.
-The single variable for these tests was the number of nodes used on the server
-side.
-\begin{figure}[H]
-  \centering
-  \includegraphics[scale=0.5]{image/election-stat.pdf}
-  \includegraphics[scale=0.5]{image/accept-stat.pdf}
-  \caption{Election duration [left], Majority accept duration[right]}
-\end{figure}
-\subsection{Election}
-The previous duration were retrieved by measuring the amount of time taken for a
-leader to be elected after having all nodes broadcast an \texttt{ELECTION}
-message. We believe the increase in the duration observed in between the
-systems made from seven to eight nodes is related to the fact that the tests
-were performed in an eight core CPU.
-\subsection{Consensus}
-The previous duration were retrieved by measuring the amount of time taken for
-the majority of acceptors to send back \texttt{ACCEPT} after the initial
-broadcast of the \texttt{PREPARE} message from the leader.
 \end{document}

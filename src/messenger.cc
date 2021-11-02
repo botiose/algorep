@@ -1,6 +1,7 @@
 #include <fstream>
 #include <cassert>
 #include <thread>
+#include <iomanip>
 #include <json.hpp>
 
 #include "messenger.hh"
@@ -76,10 +77,11 @@ Messenger::send(const int& dstNodeId,
     int tag = message.getTagInt();
 
     if (tag != 3) {
-      std::cout << "[" << tag << "]"
-                << "[" << m_rank << "]"
-                << "[" << dstNodeId << "]: "
-                << "code: " << message.getCodeInt() << std::endl;
+      std::cout << std::left << "[" << m_rank << "]"
+                << "[" << dstNodeId << "]"
+                << "[" << std::setw(9) << messageTagMap[tag] << "]"
+                << "[" << std::setw(13) << codeMap[tag][message.getCodeInt()]
+                << "]" << std::endl;
     }
 
     MPI_Send(messageString.c_str(),

@@ -10,8 +10,8 @@
 
 #define LOOP_SLEEP_DURATION 100
 
-#define SLOW_SPEED_DURATION 1000
-#define MEDIUM_SPEED_DURATION 500
+#define SLOW_SPEED_DURATION 50
+#define MEDIUM_SPEED_DURATION 10
 
 ReplManager::ReplManager(Messenger& messenger,
                          std::shared_ptr<ReceiverManager> receiverManager,

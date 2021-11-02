@@ -55,6 +55,9 @@ The server/client can be run with:
 
 $ make run-<server/client>
 
+Note that the server needs to be run before the client. This is due to the
+launch of the ompi-server bundled with the run-server target.
+
 And their respective repl can be started with:
 
 $ make repl-<server/client>

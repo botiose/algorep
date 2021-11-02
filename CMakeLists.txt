@@ -84,15 +84,14 @@ add_custom_target(etc-link
   )
 
 add_custom_target(clear-repl-client
-  COMMAND rm -rf etc/client/*
+  COMMAND rm -rf etc/client && mkdir -p etc/client
   COMMAND echo 0 > etc/turn.txt
   DEPENDS etc-link
   )
 
 add_custom_target(clear-repl-server
-  mkdir -p etc/server/log
-  > etc/server/repl.txt
-  rm etc/server/log/*
+  COMMAND rm -rf etc/server && mkdir -p etc/server/log
+  COMMAND > etc/server/repl.txt
   DEPENDS etc-link
   )
 

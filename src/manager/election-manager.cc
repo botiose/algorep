@@ -110,7 +110,9 @@ waitForVictory(Messenger& messenger,
     clientManager->enableClientConn();
   }
 
-  std::cout << "leader elected: " << leaderNodeId << std::endl; 
+  std::string str("leader elected: ");
+  str.append(std::to_string(leaderNodeId));
+  print::printString(messenger.getRank(), str);
 }
 
 void

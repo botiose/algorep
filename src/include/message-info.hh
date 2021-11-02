@@ -10,6 +10,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iomanip>
+#include <iostream>
 
 enum class MessageTag {
   LEADER_ELECTION = 0,
@@ -20,18 +22,12 @@ enum class MessageTag {
   SIZE = 5
 };
 
-static std::vector<std::string> const messageTagMap = {
-    "ELECTION", "CONSENSUS", "REPL", "FAILURE", "CLIENT"};
-
 enum class LeaderElectionCode {
   SHUTDOWN = 0,
   ELECTION = 1,
   ALIVE = 2,
   VICTORY = 3
 };
-
-static std::vector<std::string> const electionMap = {
-    "SHUTDOWN", "ELECTION", "ALIVE", "VICTORY"};
 
 enum class ConsensusCode {
   SHUTDOWN = 0,
@@ -42,9 +38,6 @@ enum class ConsensusCode {
   ACCEPTED = 5
 };
 
-static std::vector<std::string> const consensusMap = {
-    "SHUTDOWN", "PREPARE", "PROMISE", "PROPOSE", "ACCEPT", "ACCEPTED"};
-
 enum class FailureCode {
   SHUTDOWN = 0,
   PING = 1,
@@ -53,9 +46,6 @@ enum class FailureCode {
   RECOVERED = 4
 };
 
-static std::vector<std::string> const failureMap = {
-    "SHUTDOWN", "PING", "STATE", "STATE_UPDATED", "RECOVERED"};
-
 enum class ClientCode {
   SHUTDOWN = 0,
   PORT = 1,
@@ -63,9 +53,6 @@ enum class ClientCode {
   REPLICATE = 3,
   SUCCESS = 4
 };
-
-static std::vector<std::string> const clientMap = {
-    "SHUTDOWN", "PORT", "DISCONNECT", "REPLICATE", "SUCCESS"};
 
 enum class ReplCode {
   SHUTDOWN = 0,
@@ -76,17 +63,6 @@ enum class ReplCode {
   CRASH = 5,
   RECOVER = 6
 };
-
-static std::vector<std::string> const replMap = {"SHUTDOWN",
-                                                 "START",
-                                                 "SPEED_LOW",
-                                                 "SPEED_MEDIUM",
-                                                 "SPEED_HIGH",
-                                                 "CRASH",
-                                                 "RECOVER"};
-
-static std::vector<std::vector<std::string>> const codeMap = {
-    electionMap, consensusMap, replMap, failureMap, clientMap};
 
 static std::unordered_map<std::string, ReplCode> const replParseMap = {
     {"shutdown", ReplCode::SHUTDOWN},
@@ -100,3 +76,52 @@ static std::unordered_map<std::string, ReplCode> const replParseMap = {
 template <typename T>
 MessageTag
 getTagFromCode();
+
+namespace print {
+
+static std::vector<std::string> const messageTagMap = {
+    "ELECTION", "CONSENSUS", "REPL", "FAILURE", "CLIENT"};
+
+static std::vector<std::string> const electionMap = {
+    "SHUTDOWN", "ELECTION", "ALIVE", "VICTORY"};
+
+static std::vector<std::string> const consensusMap = {
+    "SHUTDOWN", "PREPARE", "PROMISE", "PROPOSE", "ACCEPT", "ACCEPTED"};
+
+static std::vector<std::string> const failureMap = {
+    "SHUTDOWN", "PING", "STATE", "STATE_UPDT", "RECOVERED"};
+
+static std::vector<std::string> const clientMap = {
+    "SHUTDOWN", "PORT", "DISCONNECT", "REPLICATE", "SUCCESS"};
+
+static std::vector<std::string> const replMap = {"SHUTDOWN",
+                                                 "START",
+                                                 "SPEED_LOW",
+                                                 "SPEED_MDIM",
+                                                 "SPEED_HIGH",
+                                                 "CRASH",
+                                                 "RECOVER"};
+
+static std::vector<std::vector<std::string>> const codeMap = {
+    electionMap, consensusMap, replMap, failureMap, clientMap};
+
+static void
+printString(const int& srcNodeId, const std::string& str) {
+  std::cout << "[" << srcNodeId << "]"
+            << "[" << std::string(25, '-') << "]: " << str << std::endl;
+};
+
+static void
+printSentMessage(const int& srcNodeId,
+                 const int& dstNodeId,
+                 const int& tag,
+                 const int& code) {
+
+  if (!(tag == 3 && code == 1)) {
+    std::cout << std::setfill('-') << std::left << "[" << srcNodeId << "]"
+              << "[" << dstNodeId << "]"
+              << "[" << std::setw(10) << messageTagMap[tag] << "]"
+              << "[" << std::setw(10) << codeMap[tag][code] << "]" << std::endl;
+  }
+};
+} // namespace print

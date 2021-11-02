@@ -79,7 +79,10 @@ replicate(Messenger& messenger,
     messenger.setMessage(ClientCode::REPLICATE, dataJsonString, message);
 
     messenger.send(0, message, serverConnection);
-    std::cout << "sent: " << data << std::endl; 
+
+    std::string str("sent: ");
+    str.append(data);
+    print::printString(0, str);
 
     using namespace std::chrono;
     auto start = high_resolution_clock::now();

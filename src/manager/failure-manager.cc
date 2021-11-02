@@ -117,8 +117,10 @@ checkTimeStamps(Messenger& messenger,
 
       if (failureContext.isAlive[i] == true && elapsed > TIMEOUT_DURATION) {
         int nodeId = i < messenger.getRank() ? i : i + 1;
-        std::cout << "failure detected by: " << messenger.getRank()
-                  << " on: " << nodeId << std::endl;
+
+        std::string str("failure detected: ");
+        str.append(std::to_string(nodeId));
+        print::printString(messenger.getRank(), str);
 
         // disable communication to the failed node and trigger and election if
         // the failed node was the leader
@@ -140,8 +142,9 @@ checkTimeStamps(Messenger& messenger,
 
         if (noCurrentRecovery == true && leaderNodeId == nodeId) {
           int nodeId = i < messenger.getRank() ? i : i + 1;
-          std::cout << "recovery detected by: " << messenger.getRank()
-                    << " on: " << nodeId << std::endl;
+          std::string str("recovery detected: ");
+          str.append(std::to_string(nodeId));
+          print::printString(messenger.getRank(), str);
 
           // start a recovery round if the current node is the leader
           std::thread recoveryThread = std::thread(handleNodeRecovery,

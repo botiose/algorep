@@ -3,10 +3,11 @@
 #include <iostream>
 
 #include "log-file-manager.hh"
+#include "message-info.hh"
 
 #define LOG_FILE_PATH "etc/server/log/%02d.txt"
 
-LogFileManager::LogFileManager(const int& nodeId) {
+LogFileManager::LogFileManager(const int& nodeId) : m_nodeId(nodeId) {
   char logFile[24];
   std::sprintf(logFile, LOG_FILE_PATH, nodeId);
 
@@ -14,7 +15,8 @@ LogFileManager::LogFileManager(const int& nodeId) {
 }
 
 void
-writeWithMode(const std::string& filePath,
+writeWithMode(const int& nodeId,
+              const std::string& filePath,
               const std::string& str,
               const std::ios_base::openmode& mode,
               const bool& newline) {
@@ -28,20 +30,22 @@ writeWithMode(const std::string& filePath,
 
   ofs.close();
 
-  std::cout << filePath << " write: " << str << std::endl;
+  std::string printStr("log write: ");
+  printStr.append(str);
+  print::printString(nodeId, printStr);
 }
 
 void
 LogFileManager::append(const std::string& entry) {
   std::unique_lock<std::mutex> lock(m_mutex);
 
-  writeWithMode(m_logFilePath, entry, std::ios_base::app, true);
+  writeWithMode(m_nodeId, m_logFilePath, entry, std::ios_base::app, true);
 }
 
 void
 LogFileManager::replace(const std::string& contents) {
   std::unique_lock<std::mutex> lock(m_mutex);
-  writeWithMode(m_logFilePath, contents, std::ios_base::out, false);
+  writeWithMode(m_nodeId, m_logFilePath, contents, std::ios_base::out, false);
 }
 
 void

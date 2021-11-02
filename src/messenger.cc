@@ -1,7 +1,6 @@
 #include <fstream>
 #include <cassert>
 #include <thread>
-#include <iomanip>
 #include <json.hpp>
 
 #include "messenger.hh"
@@ -75,14 +74,8 @@ Messenger::send(const int& dstNodeId,
     serializeMessage(message, messageString);
 
     int tag = message.getTagInt();
-
-    if (tag != 3) {
-      std::cout << std::left << "[" << m_rank << "]"
-                << "[" << dstNodeId << "]"
-                << "[" << std::setw(9) << messageTagMap[tag] << "]"
-                << "[" << std::setw(13) << codeMap[tag][message.getCodeInt()]
-                << "]" << std::endl;
-    }
+    int code = message.getCodeInt();
+    print::printSentMessage(m_rank, dstNodeId, tag, code);
 
     MPI_Send(messageString.c_str(),
              MAX_MESSAGE_SIZE,
@@ -131,14 +124,6 @@ receive(const int& nodeId,
   deserializeMessage(passKey, messageString, status.MPI_TAG, message, isValid);
 
   srcNodeId = status.MPI_SOURCE;
-
-  // if (tag != 3) {
-  //   std::cout << "[i]"
-  //             << "[" << tag << "]"
-  //             << "[" << srcNodeId << "]"
-  //             << "[" << nodeId << "]: " << messageString << std::endl
-  //             << std::flush;
-  // }
 }
 
 void
@@ -250,7 +235,9 @@ Messenger::acceptConnBlock(const std::string& port,
                            Messenger::Connection& connection) const {
   MPI_Comm_accept(
       port.c_str(), MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
-  std::cout << "accepted" << std::endl;
+
+  std::string str("connection accepted");
+  print::printString(m_rank, str);
 }
 
 void
@@ -274,13 +261,17 @@ Messenger::connect(const std::string& port,
                    Messenger::Connection& connection) const {
   MPI_Comm_connect(
       port.c_str(), MPI_INFO_NULL, 0, MPI_COMM_SELF, &connection.connection);
-  std::cout << "connected" << std::endl;
+
+  std::string str("connected");
+  print::printString(m_rank, str);
 }
 
 void
 Messenger::disconnect(Messenger::Connection& connection) const {
-  std::cout << "disconnected" << std::endl;
   MPI_Comm_disconnect(&connection.connection);
+
+  std::string str("disconnected");
+  print::printString(m_rank, str);
 }
 
 int

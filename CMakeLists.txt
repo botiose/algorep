@@ -91,7 +91,8 @@ add_custom_target(clear-repl-client
 
 add_custom_target(clear-repl-server
   > etc/server/repl.txt
-  rm -rf etc/server/log && mkdir etc/server/log
+  mkdir -p etc/server/log
+  rm etc/server/log/*
   DEPENDS etc-link
   )
 

@@ -48,6 +48,7 @@ public:
   read(std::string& contents);
 
 private:
+  int m_nodeId;
   std::string m_logFilePath;
 
   std::mutex m_mutex;

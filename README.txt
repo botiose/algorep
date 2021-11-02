@@ -39,7 +39,7 @@ to project in debug or release mode.
 
 ./etc/script/gen-build.sh [build/release]
 
-If no argument is given the project will be build in debug mode by default.
+If no argument is given the project will be build in release mode by default.
 
 The generated directory will contain a single subdirectory named after the
 output of the 'lscpu' command. The usual build files will be located under this

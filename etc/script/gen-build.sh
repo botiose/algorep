@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mode="debug"
+mode="release"
 if [ $# -eq 1 ]; then
     mode=$1
 fi

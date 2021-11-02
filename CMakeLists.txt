@@ -106,6 +106,7 @@ add_custom_target(run-client
 
 # SERVER RUN TARGET
 add_custom_target(run-server
+  COMMAND ompi-server --no-daemonize --report-uri etc/urifile &
   COMMAND printf %37sOUTPUT%37s\\\\n | tr " " "="
   COMMAND ./../../etc/script/launch-server.sh
   COMMAND printf %80s\\\\n | tr " " "="

@@ -51,11 +51,6 @@ The binary can be manually compiled with:
 
 $ make
 
-For communication in between the server and clients an ompi-server instance
-needs to be running in the background, this one should be launched with:
-
-$ ompi-server --no-daemonize --report-uri etc/urifile
-
 The server/client can be run with:
 
 $ make run-<server/client>
